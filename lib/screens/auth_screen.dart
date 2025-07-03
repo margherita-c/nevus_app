@@ -15,14 +15,14 @@ class AuthScreenState extends State<AuthScreen> {
   bool _obscureConfirmPassword = true;
   
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _nameController.dispose();
@@ -72,12 +72,15 @@ class AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  String? _validateEmail(String? value) {
+  String? _validateUsername(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your email';
+      return 'Please enter your username';
     }
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-      return 'Please enter a valid email';
+    if (value.length < 3) {
+      return 'Username must be at least 3 characters';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+      return 'Username can only contain letters, numbers, and underscores';
     }
     return null;
   }
@@ -186,18 +189,17 @@ class AuthScreenState extends State<AuthScreen> {
                           const SizedBox(height: 16),
                         ],
 
-                        // Email field
+                        // Username field (replaces email)
                         TextFormField(
-                          controller: _emailController,
+                          controller: _usernameController,
                           decoration: InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: const Icon(Icons.email),
+                            labelText: 'Username',
+                            prefixIcon: const Icon(Icons.person),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: _validateEmail,
+                          validator: _validateUsername,
                           textInputAction: TextInputAction.next,
                         ),
                         const SizedBox(height: 16),
