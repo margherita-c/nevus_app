@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  camera: ^0.10.5+5 # The camera plugin allows you to access the device's camera.
+  camera: ^0.11.1 # The camera plugin allows you to access the device's camera.
   path_provider: ^2.1.1 # The path_provider plugin provides access to the device's file system.
   path: ^1.8.3 # The path package provides utilities for manipulating file paths.
   # The following adds the Cupertino Icons font to your application.
@@ -38,6 +38,8 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
+
   flutter_test:
     sdk: flutter
 
@@ -46,10 +48,16 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png" # Path to your icon
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
+
 
 # The following section is specific to Flutter packages.
 flutter:
@@ -89,3 +97,13 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  # To add custom icons to your application, add an icons section here,
+  # in this "flutter" section. Each entry in this list should have a 
+  # "family" key with the icon family name, and a "icons" key with a
+  # list giving the asset and other descriptors for the icon. For 
+  # example:
+  # icons:
+  #   - family: MyIcons
+  #     icons:
+  #       - icon: icons/my_icon.png
