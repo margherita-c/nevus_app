@@ -81,6 +81,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 foregroundColor: Colors.white,
               ),
             ),
+            const SizedBox(height: 20),
+            Image.asset(
+              'assets/icon/human_figure.png',
+              width: 250,
+              height: 400,
+              fit: BoxFit.contain,
+            ),
           ],
         ),
       ),

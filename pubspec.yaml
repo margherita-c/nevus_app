@@ -107,3 +107,6 @@ flutter:
   #   - family: MyIcons
   #     icons:
   #       - icon: icons/my_icon.png
+
+  assets:
+    - assets/icon/human_figure.png
