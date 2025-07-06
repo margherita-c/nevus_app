@@ -3,6 +3,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'camera_screen.dart';
+import '../models/photo.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
   const PhotoGalleryScreen({super.key});
@@ -12,7 +13,7 @@ class PhotoGalleryScreen extends StatefulWidget {
 }
 
 class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
-  List<File> _imageFiles = [];
+  List<Photo> _imageFiles = [];
   bool _isLoading = true;
 
   @override
@@ -25,18 +26,27 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final List<FileSystemEntity> files = directory.listSync();
-      
+
       final List<File> imageFiles = files
-          .where((file) => file.path.toLowerCase().endsWith('.jpg') || 
-                         file.path.toLowerCase().endsWith('.png'))
+          .where((file) => file.path.toLowerCase().endsWith('.jpg') ||
+                          file.path.toLowerCase().endsWith('.png'))
           .map((file) => File(file.path))
           .toList();
 
       imageFiles.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
 
+      // Convert File to Photo
+      final List<Photo> photos = imageFiles.map((file) {
+        return Photo(
+          path: file.path,
+          dateTaken: file.lastModifiedSync(),
+          moleName: 'Unknown', // Placeholder
+        );
+      }).toList();
+
       if (mounted) {
         setState(() {
-          _imageFiles = imageFiles;
+          _imageFiles = photos;
           _isLoading = false;
         });
       }
@@ -50,7 +60,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     }
   }
 
-  Future<void> _deleteImage(File imageFile) async {
+  /* Future<void> _deleteImage(File imageFile) async {
     try {
       await imageFile.delete();
       _loadImages();
@@ -67,9 +77,9 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         );
       }
     }
-  }
+  } */
 
-  void _showImageDialog(File imageFile) {
+ /*  void _showImageDialog(File imageFile) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -110,9 +120,9 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         );
       },
     );
-  }
+  } */
 
-  void _confirmDelete(File imageFile) {
+/*   void _confirmDelete(File imageFile) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -135,7 +145,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         );
       },
     );
-  }
+  } */
 
   @override
   Widget build(BuildContext context) {
@@ -186,15 +196,51 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                   ),
                   itemCount: _imageFiles.length,
                   itemBuilder: (context, index) {
-                    final imageFile = _imageFiles[index];
+                    final photo = _imageFiles[index];
                     return GestureDetector(
-                      onTap: () => _showImageDialog(imageFile),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => Padding(
+                          padding: EdgeInsets.only(
+                            left: 16.0,
+                            right: 16.0,
+                            top: 16.0,
+                            bottom: MediaQuery.of(context).viewInsets.bottom + 300.0,
+                          ),
+                          child: SingleChildScrollView(
+                            child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: MediaQuery.of(context).size.height * 0.8,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                              SizedBox(
+                                width: 500,
+                                height: 500,
+                                child: Image.file(
+                                File(photo.path),
+                                fit: BoxFit.cover,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text('Mole: ${photo.moleName}'),
+                              Text('Date: ${photo.dateTaken}'),
+                              ],
+                            ),
+                            ),
+                          ),
+                          ),
+                        );
+                      },
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8.0),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
+                              color: Colors.black.withAlpha((0.2 * 255).toInt()),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -203,7 +249,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8.0),
                           child: Image.file(
-                            imageFile,
+                            File(photo.path),
                             fit: BoxFit.cover,
                           ),
                         ),
