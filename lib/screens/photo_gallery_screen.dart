@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:developer' as developer;
+//import 'package:path_provider/path_provider.dart';
+//import 'dart:developer' as developer;
 import 'dart:io';
 import 'camera_screen.dart';
 import '../models/photo.dart';
+import '../utils/photo_storage.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
   const PhotoGalleryScreen({super.key});
@@ -23,129 +24,43 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   }
 
   Future<void> _loadImages() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final List<FileSystemEntity> files = directory.listSync();
-
-      final List<File> imageFiles = files
-          .where((file) => file.path.toLowerCase().endsWith('.jpg') ||
-                          file.path.toLowerCase().endsWith('.png'))
-          .map((file) => File(file.path))
-          .toList();
-
-      imageFiles.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-
-      // Convert File to Photo
-      final List<Photo> photos = imageFiles.map((file) {
-        return Photo(
-          path: file.path,
-          dateTaken: file.lastModifiedSync(),
-          moleName: 'Unknown', // Placeholder
-        );
-      }).toList();
-
-      if (mounted) {
-        setState(() {
-          _imageFiles = photos;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      developer.log('Error loading images: $e', name: 'PhotoGallery');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    setState(() => _isLoading = true);
+    final photos = await PhotoStorage.loadPhotos();
+    setState(() {
+      _imageFiles = photos;
+      _isLoading = false;
+    });
   }
 
-  /* Future<void> _deleteImage(File imageFile) async {
-    try {
-      await imageFile.delete();
-      _loadImages();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image deleted')),
-        );
-      }
-    } catch (e) {
-      developer.log('Error deleting image: $e', name: 'PhotoGallery');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error deleting image')),
-        );
-      }
-    }
-  } */
+Future<void> _saveImages() async {
+    await PhotoStorage.savePhotos(_imageFiles);
+  }
 
- /*  void _showImageDialog(File imageFile) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.7,
-                ),
-                child: Image.file(
-                  imageFile,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Close'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        _confirmDelete(imageFile);
-                      },
-                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  } */
+  // Example: Call this after editing a mole name
+  void _editMoleName(int index, String newName) async {
+    setState(() {
+      _imageFiles[index] = Photo(
+        path: _imageFiles[index].path,
+        dateTaken: _imageFiles[index].dateTaken,
+        moleName: newName,
+      );
+    });
+    await _saveImages();
+  }
+  
+ Future<void> _deleteImage(int index) async {
+    setState(() {
+      _imageFiles.removeAt(index);
+    });
+    await _saveImages();
+  }
 
-/*   void _confirmDelete(File imageFile) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Image'),
-          content: const Text('Are you sure you want to delete this image?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteImage(imageFile);
-              },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  } */
+  void _addPhoto(Photo newPhoto) async {
+    setState(() {
+      _imageFiles.add(newPhoto);
+    });
+    await _saveImages();
+  }
 
   @override
   Widget build(BuildContext context) {

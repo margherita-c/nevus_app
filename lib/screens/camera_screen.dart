@@ -4,6 +4,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:developer' as developer;
 import 'photo_gallery_screen.dart';
+import '../models/photo.dart';
+import '../utils/photo_storage.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -46,11 +48,24 @@ class CameraScreenState extends State<CameraScreen> {
       directory.path,
       '${DateTime.now().millisecondsSinceEpoch}.jpg',
     );
+    print('Saving picture to $imagePath');
 
     try {
       XFile picture = await _controller!.takePicture();
       await picture.saveTo(imagePath);
       
+          final newPhoto = Photo(
+      path: imagePath,
+      dateTaken: DateTime.now(),
+      moleName: '', // or prompt user for a name
+    );
+
+    // Load, add, and save
+    List<Photo> photos = await PhotoStorage.loadPhotos();
+    photos.add(newPhoto);
+    await PhotoStorage.savePhotos(photos);
+      print('PhotoStorage.savePhotos');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
