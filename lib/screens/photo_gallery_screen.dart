@@ -118,35 +118,69 @@ Future<void> _saveImages() async {
                           context: context,
                           isScrollControlled: true,
                           builder: (_) => Padding(
-                          padding: EdgeInsets.only(
-                            left: 16.0,
-                            right: 16.0,
-                            top: 16.0,
-                            bottom: MediaQuery.of(context).viewInsets.bottom + 300.0,
-                          ),
-                          child: SingleChildScrollView(
-                            child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight: MediaQuery.of(context).size.height * 0.8,
+                            padding: EdgeInsets.only(
+                              left: 16.0,
+                              right: 16.0,
+                              top: 16.0,
+                              bottom: MediaQuery.of(context).viewInsets.bottom + 300.0,
                             ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                              SizedBox(
-                                width: 500,
-                                height: 500,
-                                child: Image.file(
-                                File(photo.path),
-                                fit: BoxFit.cover,
+                            child: SingleChildScrollView(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 500,
+                                      height: 500,
+                                      child: Image.file(
+                                        File(photo.path),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text('Mole: ${photo.moleName}'),
+                                    Text('Date: ${photo.dateTaken}'),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        String? newName = await showDialog<String>(
+                                          context: context,
+                                          builder: (context) {
+                                            final controller = TextEditingController(text: photo.moleName);
+                                            return AlertDialog(
+                                              title: const Text('Edit Mole Name'),
+                                              content: TextField(
+                                                controller: controller,
+                                                decoration: const InputDecoration(labelText: 'Mole Name'),
+                                                autofocus: true,
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, controller.text),
+                                                  child: const Text('Save'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                        if (newName != null && newName.trim().isNotEmpty) {
+                                          Navigator.pop(context); // Close the bottom sheet
+                                          _editMoleName(index, newName.trim());
+                                        }
+                                      },
+                                      child: const Text('Edit Name'),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 5),
-                              Text('Mole: ${photo.moleName}'),
-                              Text('Date: ${photo.dateTaken}'),
-                              ],
                             ),
-                            ),
-                          ),
                           ),
                         );
                       },
