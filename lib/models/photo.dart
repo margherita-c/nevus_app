@@ -1,23 +1,51 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+
+class Spot {
+  Offset position;
+  double radius;
+  Spot({required this.position, required this.radius});
+
+  // Optional: Serialization methods if you save/load spots
+  Map<String, dynamic> toJson() => {
+    'dx': position.dx,
+    'dy': position.dy,
+    'radius': radius,
+  };
+
+  factory Spot.fromJson(Map<String, dynamic> json) => Spot(
+    position: Offset(json['dx'], json['dy']),
+    radius: json['radius'],
+  );
+}
+
 class Photo {
-  final String path;
-  final DateTime dateTaken;
-  final String moleName;
+  String path;
+  String moleName;
+  String dateTaken;
+  List<Spot> spots;
 
   Photo({
     required this.path,
-    required this.dateTaken,
     required this.moleName,
-  });
+    required this.dateTaken,
+    List<Spot>? spots,
+  }) : spots = spots ?? [];
 
+  // Optional: Serialization methods
   Map<String, dynamic> toJson() => {
-        'path': path,
-        'dateTaken': dateTaken.toIso8601String(),
-        'moleName': moleName,
-      };
+    'path': path,
+    'moleName': moleName,
+    'dateTaken': dateTaken,
+    'spots': spots.map((s) => s.toJson()).toList(),
+  };
 
   factory Photo.fromJson(Map<String, dynamic> json) => Photo(
-        path: json['path'],
-        dateTaken: DateTime.parse(json['dateTaken']),
-        moleName: json['moleName'],
-      );
+    path: json['path'],
+    moleName: json['moleName'],
+    dateTaken: json['dateTaken'],
+    spots: (json['spots'] as List<dynamic>?)
+        ?.map((s) => Spot.fromJson(s))
+        .toList() ?? [],
+  );
 }

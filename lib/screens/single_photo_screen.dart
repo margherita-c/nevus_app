@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/photo.dart';
 
-class SinglePhotoScreen extends StatelessWidget {
+class SinglePhotoScreen extends StatefulWidget {
   final Photo photo;
   final int index;
   final void Function(int, String) onEditMoleName;
@@ -15,6 +15,17 @@ class SinglePhotoScreen extends StatelessWidget {
     required this.onEditMoleName,
     required this.onDelete,
   });
+
+  @override
+  _SinglePhotoScreenState createState() => _SinglePhotoScreenState();
+}
+
+enum MarkAction { none, add, drag }
+
+class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
+  bool markMode = false;
+  int? selectedSpotIndex;
+  MarkAction markAction = MarkAction.none;
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +54,21 @@ class SinglePhotoScreen extends StatelessWidget {
                 ),
               );
               if (confirm == true) {
-                onDelete(index);
+                widget.onDelete(widget.index);
                 Navigator.pop(context);
               }
             },
             tooltip: 'Delete',
+          ),
+          IconButton(
+            icon: Icon(Icons.edit), // Pencil icon for mark mode
+            tooltip: 'Mark Mode',
+            onPressed: () {
+              setState(() {
+                markMode = !markMode;
+                markAction = MarkAction.none;
+              });
+            },
           ),
         ],
       ),
@@ -56,22 +77,136 @@ class SinglePhotoScreen extends StatelessWidget {
           children: [
             SizedBox(
               width: double.infinity,
-              height: 400,
-              child: Image.file(
-                File(photo.path),
-                fit: BoxFit.cover,
+              height: MediaQuery.of(context).size.height * (2 / 3),
+              child: GestureDetector(
+                onTapDown: (details) {
+                  if (markMode && markAction == MarkAction.add) {
+                    final RenderBox box = context.findRenderObject() as RenderBox;
+                    final localPos = box.globalToLocal(details.globalPosition);
+                    setState(() {
+                      widget.photo.spots.add(Spot(position: localPos, radius: 30));
+                      selectedSpotIndex = widget.photo.spots.length - 1;
+                      markAction = MarkAction.none;
+                    });
+                  }
+                },
+                onPanUpdate: (details) {
+                  if (markMode && markAction == MarkAction.drag && selectedSpotIndex != null) {
+                    setState(() {
+                      widget.photo.spots[selectedSpotIndex!].position += details.delta;
+                    });
+                  }
+                },
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        minScale: 1.0,
+                        maxScale: 5.0,
+                        panEnabled: !markMode,   // Allow drag only when NOT in mark mode
+                        scaleEnabled: !markMode, // Allow zoom only when NOT in mark mode
+                        child: Image.file(
+                          File(widget.photo.path),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    ...widget.photo.spots.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final spot = entry.value;
+                      return Positioned(
+                        left: spot.position.dx - spot.radius,
+                        top: spot.position.dy - spot.radius,
+                        child: GestureDetector(
+                          onTap: () {
+                            if (markMode) {
+                              setState(() {
+                                selectedSpotIndex = i;
+                              });
+                            }
+                          },
+                          onScaleUpdate: (details) {
+                            if (!markMode && selectedSpotIndex == i) {
+                              setState(() {
+                                spot.radius = (spot.radius * details.scale).clamp(10.0, 200.0);
+                              });
+                            }
+                          },
+                          child: Container(
+                            width: spot.radius * 2,
+                            height: spot.radius * 2,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: selectedSpotIndex == i ? Colors.blue : Colors.red,
+                                width: selectedSpotIndex == i ? 4 : 2,
+                              ),
+                              color: Colors.red.withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
               ),
             ),
+            if (markMode)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.add_circle,
+                          color: markAction == MarkAction.add ? Colors.blue : Colors.black),
+                      tooltip: 'Add Mark',
+                      onPressed: () {
+                        setState(() {
+                          markAction = MarkAction.add;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.remove_circle,
+                          color: (selectedSpotIndex != null && markAction == MarkAction.none)
+                              ? Colors.red
+                              : Colors.black),
+                      tooltip: 'Delete Mark',
+                      onPressed: selectedSpotIndex != null
+                          ? () {
+                              setState(() {
+                                widget.photo.spots.removeAt(selectedSpotIndex!);
+                                selectedSpotIndex = null;
+                              });
+                            }
+                          : null,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.open_with,
+                          color: markAction == MarkAction.drag ? Colors.blue : Colors.black),
+                      tooltip: 'Drag Mark',
+                      onPressed: selectedSpotIndex != null
+                          ? () {
+                              setState(() {
+                                markAction = MarkAction.drag;
+                              });
+                            }
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 16),
-            Text('Mole: ${photo.moleName}', style: const TextStyle(fontSize: 20)),
-            Text('Date: ${photo.dateTaken}', style: const TextStyle(color: Colors.grey)),
+            Text('Mole: ${widget.photo.moleName}', style: const TextStyle(fontSize: 20)),
+            Text('Date: ${widget.photo.dateTaken}', style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () async {
                 String? newName = await showDialog<String>(
                   context: context,
                   builder: (context) {
-                    final controller = TextEditingController(text: photo.moleName);
+                    final controller = TextEditingController(text: widget.photo.moleName);
                     return AlertDialog(
                       title: const Text('Edit Mole Name'),
                       content: TextField(
@@ -93,7 +228,7 @@ class SinglePhotoScreen extends StatelessWidget {
                   },
                 );
                 if (newName != null && newName.trim().isNotEmpty) {
-                  onEditMoleName(index, newName.trim());
+                  widget.onEditMoleName(widget.index, newName.trim());
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Mole name updated!')),
                   );

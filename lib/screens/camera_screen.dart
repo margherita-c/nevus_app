@@ -27,11 +27,8 @@ class CameraScreenState extends State<CameraScreen> {
 
   Future<void> _initializeCamera() async {
     cameras = await availableCameras();
-    _controller = CameraController(
-      cameras![0],
-      ResolutionPreset.high,
-    );
-    
+    _controller = CameraController(cameras![0], ResolutionPreset.high);
+
     await _controller!.initialize();
     if (mounted) {
       setState(() {
@@ -53,17 +50,17 @@ class CameraScreenState extends State<CameraScreen> {
     try {
       XFile picture = await _controller!.takePicture();
       await picture.saveTo(imagePath);
-      
-          final newPhoto = Photo(
-      path: imagePath,
-      dateTaken: DateTime.now(),
-      moleName: '', // or prompt user for a name
-    );
 
-    // Load, add, and save
-    List<Photo> photos = await PhotoStorage.loadPhotos();
-    photos.add(newPhoto);
-    await PhotoStorage.savePhotos(photos);
+      final newPhoto = Photo(
+        path: imagePath,
+        dateTaken: DateTime.now.toString(),
+        moleName: '', // or prompt user for a name
+      );
+
+      // Load, add, and save
+      List<Photo> photos = await PhotoStorage.loadPhotos();
+      photos.add(newPhoto);
+      await PhotoStorage.savePhotos(photos);
       print('PhotoStorage.savePhotos');
 
       if (mounted) {
@@ -75,7 +72,9 @@ class CameraScreenState extends State<CameraScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PhotoGalleryScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const PhotoGalleryScreen(),
+                  ),
                 );
               },
             ),
@@ -85,9 +84,9 @@ class CameraScreenState extends State<CameraScreen> {
     } catch (e) {
       developer.log('Error taking picture: $e', name: 'CameraScreen');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error taking picture')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Error taking picture')));
       }
     }
   }
@@ -95,9 +94,7 @@ class CameraScreenState extends State<CameraScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -110,7 +107,9 @@ class CameraScreenState extends State<CameraScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const PhotoGalleryScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const PhotoGalleryScreen(),
+                ),
               );
             },
             tooltip: 'View Gallery',
