@@ -5,6 +5,7 @@ import 'dart:io';
 import 'camera_screen.dart';
 import '../models/photo.dart';
 import '../utils/photo_storage.dart';
+import 'single_photo_screen.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
   const PhotoGalleryScreen({super.key});
@@ -114,88 +115,14 @@ Future<void> _saveImages() async {
                     final photo = _imageFiles[index];
                     return GestureDetector(
                       onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          builder: (_) => Padding(
-                            padding: EdgeInsets.only(
-                              left: 16.0,
-                              right: 16.0,
-                              top: 16.0,
-                              bottom: MediaQuery.of(context).viewInsets.bottom + 300.0,
-                            ),
-                            child: SingleChildScrollView(
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxHeight: MediaQuery.of(context).size.height * 0.8,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: 500,
-                                      height: 500,
-                                      child: Image.file(
-                                        File(photo.path),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text('Mole: ${photo.moleName}'),
-                                    Text('Date: ${photo.dateTaken}'),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            String? newName = await showDialog<String>(
-                                              context: context,
-                                              builder: (context) {
-                                                final controller = TextEditingController(text: photo.moleName);
-                                                return AlertDialog(
-                                                  title: const Text('Edit Mole Name'),
-                                                  content: TextField(
-                                                    controller: controller,
-                                                    decoration: const InputDecoration(labelText: 'Mole Name'),
-                                                    autofocus: true,
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () => Navigator.pop(context),
-                                                      child: const Text('Cancel'),
-                                                    ),
-                                                    TextButton(
-                                                      onPressed: () => Navigator.pop(context, controller.text),
-                                                      child: const Text('Save'),
-                                                    ),
-                                                  ],
-                                                );
-                                              },
-                                            );
-                                            if (newName != null && newName.trim().isNotEmpty) {
-                                              Navigator.pop(context); // Close the bottom sheet
-                                              _editMoleName(index, newName.trim());
-                                            }
-                                          },
-                                          child: const Text('Edit Name'),
-                                        ), //ElevatedButton, Edit mole name
-                                        const SizedBox(width: 16),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color.fromARGB(255, 231, 159, 153),
-                                          ),
-                                          onPressed: () async {
-                                            Navigator.pop(context); // Close the bottom sheet
-                                            await _deleteImage(index);
-                                          },
-                                          child: const Text('Delete'),
-                                        ), // ElevatedButton, Delete photo
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SinglePhotoScreen(
+                              photo: photo,
+                              index: index,
+                              onEditMoleName: _editMoleName,
+                              onDelete: (i) async => await _deleteImage(i),
                             ),
                           ),
                         );
