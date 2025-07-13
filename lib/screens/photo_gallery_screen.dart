@@ -144,38 +144,54 @@ Future<void> _saveImages() async {
                                     Text('Mole: ${photo.moleName}'),
                                     Text('Date: ${photo.dateTaken}'),
                                     const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        String? newName = await showDialog<String>(
-                                          context: context,
-                                          builder: (context) {
-                                            final controller = TextEditingController(text: photo.moleName);
-                                            return AlertDialog(
-                                              title: const Text('Edit Mole Name'),
-                                              content: TextField(
-                                                controller: controller,
-                                                decoration: const InputDecoration(labelText: 'Mole Name'),
-                                                autofocus: true,
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context),
-                                                  child: const Text('Cancel'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context, controller.text),
-                                                  child: const Text('Save'),
-                                                ),
-                                              ],
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            String? newName = await showDialog<String>(
+                                              context: context,
+                                              builder: (context) {
+                                                final controller = TextEditingController(text: photo.moleName);
+                                                return AlertDialog(
+                                                  title: const Text('Edit Mole Name'),
+                                                  content: TextField(
+                                                    controller: controller,
+                                                    decoration: const InputDecoration(labelText: 'Mole Name'),
+                                                    autofocus: true,
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(context),
+                                                      child: const Text('Cancel'),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(context, controller.text),
+                                                      child: const Text('Save'),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
                                             );
+                                            if (newName != null && newName.trim().isNotEmpty) {
+                                              Navigator.pop(context); // Close the bottom sheet
+                                              _editMoleName(index, newName.trim());
+                                            }
                                           },
-                                        );
-                                        if (newName != null && newName.trim().isNotEmpty) {
-                                          Navigator.pop(context); // Close the bottom sheet
-                                          _editMoleName(index, newName.trim());
-                                        }
-                                      },
-                                      child: const Text('Edit Name'),
+                                          child: const Text('Edit Name'),
+                                        ), //ElevatedButton, Edit mole name
+                                        const SizedBox(width: 16),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color.fromARGB(255, 231, 159, 153),
+                                          ),
+                                          onPressed: () async {
+                                            Navigator.pop(context); // Close the bottom sheet
+                                            await _deleteImage(index);
+                                          },
+                                          child: const Text('Delete'),
+                                        ), // ElevatedButton, Delete photo
+                                      ],
                                     ),
                                   ],
                                 ),
