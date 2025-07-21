@@ -82,10 +82,18 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                 behavior: HitTestBehavior.translucent, // Add this line
                 onTapDown: (details) {
                   if (markMode && markAction == MarkAction.add) {
-                    final RenderBox box = context.findRenderObject() as RenderBox;
-                    final localPos = box.globalToLocal(details.globalPosition);
+                    // Get the RenderBox of the Stack widget instead
+                    final RenderBox stackBox = context.findRenderObject() as RenderBox;
+                    final localPos = stackBox.globalToLocal(details.globalPosition);
+                    
+                    // Adjust for the SizedBox offset - subtract the AppBar height and any padding
+                    final adjustedPos = Offset(
+                      localPos.dx,
+                      localPos.dy - (AppBar().preferredSize.height + MediaQuery.of(context).padding.top),
+                    );
+                    
                     setState(() {
-                      widget.photo.spots.add(Spot(position: localPos, radius: 30));
+                      widget.photo.spots.add(Spot(position: adjustedPos, radius: 30));
                       selectedSpotIndex = widget.photo.spots.length - 1;
                       markAction = MarkAction.none;
                     });
