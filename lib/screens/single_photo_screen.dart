@@ -79,6 +79,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
               width: double.infinity,
               height: MediaQuery.of(context).size.height * (2 / 3),
               child: GestureDetector(
+                behavior: HitTestBehavior.translucent, // Add this line
                 onTapDown: (details) {
                   if (markMode && markAction == MarkAction.add) {
                     final RenderBox box = context.findRenderObject() as RenderBox;
@@ -103,8 +104,11 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                       child: InteractiveViewer(
                         minScale: 1.0,
                         maxScale: 5.0,
-                        panEnabled: !markMode,   // Allow drag only when NOT in mark mode
-                        scaleEnabled: !markMode, // Allow zoom only when NOT in mark mode
+                        panEnabled: !markMode,   // Allow pan when NOT in mark mode
+                        scaleEnabled: !markMode, // Allow zoom when NOT in mark mode
+                        constrained: true,       // Add this line
+                        boundaryMargin: const EdgeInsets.all(20.0), // Add this line for better zoom experience
+                        transformationController: TransformationController(), // Add this line
                         child: Image.file(
                           File(widget.photo.path),
                           fit: BoxFit.contain,
@@ -125,13 +129,14 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                               });
                             }
                           },
-                          onScaleUpdate: (details) {
-                            if (!markMode && selectedSpotIndex == i) {
-                              setState(() {
-                                spot.radius = (spot.radius * details.scale).clamp(10.0, 200.0);
-                              });
-                            }
-                          },
+                          // onScaleUpdate: (details) {
+                          //   if (!markMode && selectedSpotIndex == i) {
+                          //     setState(() {
+                          //       spot.radius = (spot.radius * details.scale).clamp(10.0, 200.0);
+                          //     });
+                          //   }
+                          // },
+                          // This is commented so tha the spots are easier to drag and select
                           child: Container(
                             width: spot.radius * 2,
                             height: spot.radius * 2,
