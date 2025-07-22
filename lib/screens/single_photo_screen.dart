@@ -78,7 +78,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
             SizedBox(
               width: double.infinity,
               height: MediaQuery.of(context).size.height * (2 / 3),
-              child: Stack(  // Remove GestureDetector here
+              child: Stack(
                 children: [
                   Positioned.fill(
                     child: InteractiveViewer(
@@ -86,9 +86,46 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                       maxScale: 5.0,
                       panEnabled: !markMode,
                       scaleEnabled: !markMode,
-                      child: Image.file(
-                        File(widget.photo.path),
-                        fit: BoxFit.contain,
+                      child: Stack(  // Add Stack inside InteractiveViewer
+                        children: [
+                          // Image as the base layer
+                          Positioned.fill(
+                            child: Image.file(
+                              File(widget.photo.path),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          // Render spots - these will now transform with the image
+                          ...widget.photo.spots.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final spot = entry.value;
+                            return Positioned(
+                              left: spot.position.dx - spot.radius,
+                              top: spot.position.dy - spot.radius,
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (markMode) {
+                                    setState(() {
+                                      selectedSpotIndex = i;
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  width: spot.radius * 2,
+                                  height: spot.radius * 2,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: selectedSpotIndex == i ? Colors.blue : Colors.red,
+                                      width: selectedSpotIndex == i ? 4 : 2,
+                                    ),
+                                    color: Colors.red.withOpacity(0.2),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
                       ),
                     ),
                   ),
@@ -116,44 +153,6 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                           : null,
                       ),
                     ),
-                  // Render spots
-                  ...widget.photo.spots.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final spot = entry.value;
-                    return Positioned(
-                      left: spot.position.dx - spot.radius,
-                      top: spot.position.dy - spot.radius,
-                      child: GestureDetector(
-                        onTap: () {
-                          if (markMode) {
-                            setState(() {
-                              selectedSpotIndex = i;
-                            });
-                          }
-                        },
-                        // onScaleUpdate: (details) {
-                        //   if (!markMode && selectedSpotIndex == i) {
-                        //     setState(() {
-                        //       spot.radius = (spot.radius * details.scale).clamp(10.0, 200.0);
-                        //     });
-                        //   }
-                        // },
-                        // This is commented so tha the spots are easier to drag and select
-                        child: Container(
-                          width: spot.radius * 2,
-                          height: spot.radius * 2,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selectedSpotIndex == i ? Colors.blue : Colors.red,
-                              width: selectedSpotIndex == i ? 4 : 2,
-                            ),
-                            color: Colors.red.withOpacity(0.2),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
                 ],
               ),
             ),
