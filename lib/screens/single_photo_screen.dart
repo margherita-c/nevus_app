@@ -78,90 +78,83 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
             SizedBox(
               width: double.infinity,
               height: MediaQuery.of(context).size.height * (2 / 3),
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent, // Add this line
-                onTapDown: (details) {
-                  if (markMode && markAction == MarkAction.add) {
-                    // Get the RenderBox of the Stack widget instead
-                    final RenderBox stackBox = context.findRenderObject() as RenderBox;
-                    final localPos = stackBox.globalToLocal(details.globalPosition);
-                    
-                    // Adjust for the SizedBox offset - subtract the AppBar height and any padding
-                    final adjustedPos = Offset(
-                      localPos.dx,
-                      localPos.dy - (AppBar().preferredSize.height + MediaQuery.of(context).padding.top),
-                    );
-                    
-                    setState(() {
-                      widget.photo.spots.add(Spot(position: adjustedPos, radius: 30));
-                      selectedSpotIndex = widget.photo.spots.length - 1;
-                      markAction = MarkAction.none;
-                    });
-                  }
-                },
-                onPanUpdate: (details) {
-                  if (markMode && markAction == MarkAction.drag && selectedSpotIndex != null) {
-                    setState(() {
-                      widget.photo.spots[selectedSpotIndex!].position += details.delta;
-                    });
-                  }
-                },
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: InteractiveViewer(
-                        minScale: 1.0,
-                        maxScale: 5.0,
-                        panEnabled: !markMode,   // Allow pan when NOT in mark mode
-                        scaleEnabled: !markMode, // Allow zoom when NOT in mark mode
-                        constrained: true,       // Add this line
-                        boundaryMargin: const EdgeInsets.all(20.0), // Add this line for better zoom experience
-                        transformationController: TransformationController(), // Add this line
-                        child: Image.file(
-                          File(widget.photo.path),
-                          fit: BoxFit.contain,
-                        ),
+              child: Stack(  // Remove GestureDetector here
+                children: [
+                  Positioned.fill(
+                    child: InteractiveViewer(
+                      minScale: 1.0,
+                      maxScale: 5.0,
+                      panEnabled: !markMode,
+                      scaleEnabled: !markMode,
+                      child: Image.file(
+                        File(widget.photo.path),
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    ...widget.photo.spots.asMap().entries.map((entry) {
-                      final i = entry.key;
-                      final spot = entry.value;
-                      return Positioned(
-                        left: spot.position.dx - spot.radius,
-                        top: spot.position.dy - spot.radius,
-                        child: GestureDetector(
-                          onTap: () {
-                            if (markMode) {
+                  ),
+                  // Add GestureDetector as an overlay only when in mark mode
+                  if (markMode)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTapDown: markAction == MarkAction.add
+                          ? (details) {
+                              final localPos = details.localPosition;
                               setState(() {
-                                selectedSpotIndex = i;
+                                widget.photo.spots.add(Spot(position: localPos, radius: 30));
+                                selectedSpotIndex = widget.photo.spots.length - 1;
+                                markAction = MarkAction.none;
                               });
                             }
-                          },
-                          // onScaleUpdate: (details) {
-                          //   if (!markMode && selectedSpotIndex == i) {
-                          //     setState(() {
-                          //       spot.radius = (spot.radius * details.scale).clamp(10.0, 200.0);
-                          //     });
-                          //   }
-                          // },
-                          // This is commented so tha the spots are easier to drag and select
-                          child: Container(
-                            width: spot.radius * 2,
-                            height: spot.radius * 2,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: selectedSpotIndex == i ? Colors.blue : Colors.red,
-                                width: selectedSpotIndex == i ? 4 : 2,
-                              ),
-                              color: Colors.red.withOpacity(0.2),
+                          : null,
+                        onPanUpdate: markAction == MarkAction.drag && selectedSpotIndex != null
+                          ? (details) {
+                              setState(() {
+                                widget.photo.spots[selectedSpotIndex!].position += details.delta;
+                              });
+                            }
+                          : null,
+                      ),
+                    ),
+                  // Render spots
+                  ...widget.photo.spots.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final spot = entry.value;
+                    return Positioned(
+                      left: spot.position.dx - spot.radius,
+                      top: spot.position.dy - spot.radius,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (markMode) {
+                            setState(() {
+                              selectedSpotIndex = i;
+                            });
+                          }
+                        },
+                        // onScaleUpdate: (details) {
+                        //   if (!markMode && selectedSpotIndex == i) {
+                        //     setState(() {
+                        //       spot.radius = (spot.radius * details.scale).clamp(10.0, 200.0);
+                        //     });
+                        //   }
+                        // },
+                        // This is commented so tha the spots are easier to drag and select
+                        child: Container(
+                          width: spot.radius * 2,
+                          height: spot.radius * 2,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selectedSpotIndex == i ? Colors.blue : Colors.red,
+                              width: selectedSpotIndex == i ? 4 : 2,
                             ),
+                            color: Colors.red.withOpacity(0.2),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ],
-                ),
+                      ),
+                    );
+                  }).toList(),
+                ],
               ),
             ),
             if (markMode)
