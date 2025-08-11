@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/photo.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3;
 
 class SinglePhotoScreen extends StatefulWidget {
   final Photo photo;
@@ -26,6 +27,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
   bool markMode = false;
   int? selectedSpotIndex;
   MarkAction markAction = MarkAction.none;
+  final TransformationController _transformationController = TransformationController(); // Add this
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +63,20 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
             tooltip: 'Delete',
           ),
           IconButton(
-            icon: Icon(Icons.edit), // Pencil icon for mark mode
-            tooltip: 'Mark Mode',
+            icon: Icon(
+              Icons.edit,
+              color: markMode ? Colors.white : null, // White icon when active
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: markMode ? Colors.blue : null, // Blue background when active
+              foregroundColor: markMode ? Colors.white : null, // Ensure white icon
+            ),
+            tooltip: markMode ? 'Exit Mark Mode' : 'Mark Mode',
             onPressed: () {
               setState(() {
                 markMode = !markMode;
                 markAction = MarkAction.none;
+                selectedSpotIndex = null; // Clear selection when exiting mark mode
               });
             },
           ),
@@ -86,7 +96,8 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                       maxScale: 5.0,
                       panEnabled: !markMode,
                       scaleEnabled: !markMode,
-                      child: Stack(  // Add Stack inside InteractiveViewer
+                      transformationController: _transformationController, // Add this
+                      child: Stack(
                         children: [
                           // Image as the base layer
                           Positioned.fill(
@@ -136,9 +147,18 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                         behavior: HitTestBehavior.translucent,
                         onTapDown: markAction == MarkAction.add
                           ? (details) {
-                              final localPos = details.localPosition;
+                              // Transform the tap position to account for zoom/pan
+                              final Matrix4 transform = _transformationController.value;
+                              final Matrix4 invertedTransform = Matrix4.inverted(transform);
+                              final Vector3 transformed = invertedTransform.transform3(Vector3(
+                                details.localPosition.dx,
+                                details.localPosition.dy,
+                                0,
+                              ));
+                              final Offset transformedPosition = Offset(transformed.x, transformed.y);
+
                               setState(() {
-                                widget.photo.spots.add(Spot(position: localPos, radius: 30));
+                                widget.photo.spots.add(Spot(position: transformedPosition, radius: 30));
                                 selectedSpotIndex = widget.photo.spots.length - 1;
                                 markAction = MarkAction.none;
                               });
@@ -146,8 +166,12 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                           : null,
                         onPanUpdate: markAction == MarkAction.drag && selectedSpotIndex != null
                           ? (details) {
+                              // Transform the drag delta to account for zoom
+                              final double scale = _transformationController.value.getMaxScaleOnAxis();
+                              final Offset transformedDelta = details.delta / scale;
+                              
                               setState(() {
-                                widget.photo.spots[selectedSpotIndex!].position += details.delta;
+                                widget.photo.spots[selectedSpotIndex!].position += transformedDelta;
                               });
                             }
                           : null,
@@ -245,5 +269,11 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _transformationController.dispose(); // Don't forget to dispose
+    super.dispose();
   }
 }
