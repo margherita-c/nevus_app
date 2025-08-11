@@ -130,12 +130,14 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                                       color: selectedSpotIndex == i ? Colors.blue : Colors.red,
                                       width: selectedSpotIndex == i ? 4 : 2,
                                     ),
-                                    color: Colors.red.withOpacity(0.2),
+                                    color: Colors.red.withValues(
+                                      alpha: 100, // Semi-transparent red
+                                    ),
                                   ),
                                 ),
                               ),
                             );
-                          }).toList(),
+                          })//.toList(),
                         ],
                       ),
                     ),

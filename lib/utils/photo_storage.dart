@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/photo.dart';
@@ -18,7 +19,7 @@ class PhotoStorage {
     final file = await _localFile;
     final jsonList = photos.map((p) => p.toJson()).toList();
     await file.writeAsString(jsonEncode(jsonList));
-    print('json saved to ${file.path}');
+    developer.log('Photo saved successfully', name: 'CameraScreen');
   }
 
   static Future<List<Photo>> loadPhotos() async {

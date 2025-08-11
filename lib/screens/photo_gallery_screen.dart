@@ -56,13 +56,13 @@ Future<void> _saveImages() async {
     await _saveImages();
   }
 
-  void _addPhoto(Photo newPhoto) async {
+  /* void _addPhoto(Photo newPhoto) async {
     setState(() {
       _imageFiles.add(newPhoto);
     });
     await _saveImages();
   }
-
+ */
   @override
   Widget build(BuildContext context) {
     return Scaffold(

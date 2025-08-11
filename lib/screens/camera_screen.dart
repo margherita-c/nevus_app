@@ -45,7 +45,7 @@ class CameraScreenState extends State<CameraScreen> {
       directory.path,
       '${DateTime.now().millisecondsSinceEpoch}.jpg',
     );
-    print('Saving picture to $imagePath');
+    developer.log('Saving picture to $imagePath', name: 'CameraScreen');
 
     try {
       XFile picture = await _controller!.takePicture();
@@ -61,7 +61,7 @@ class CameraScreenState extends State<CameraScreen> {
       List<Photo> photos = await PhotoStorage.loadPhotos();
       photos.add(newPhoto);
       await PhotoStorage.savePhotos(photos);
-      print('PhotoStorage.savePhotos');
+      developer.log('Photo saved successfully', name: 'CameraScreen');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
