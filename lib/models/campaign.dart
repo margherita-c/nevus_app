@@ -20,3 +20,4 @@ class Campaign {
     date: DateTime.parse(json['date']),
     photoIds: List<String>.from(json['photoIds'] ?? []),
   );
+}
