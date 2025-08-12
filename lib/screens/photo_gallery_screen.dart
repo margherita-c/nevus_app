@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'camera_screen.dart';
 import '../models/photo.dart';
-import '../utils/photo_storage.dart';
+import '../storage/photo_storage.dart';
 import 'single_photo_screen.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
