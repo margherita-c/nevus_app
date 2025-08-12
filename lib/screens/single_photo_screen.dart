@@ -131,7 +131,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                                       width: selectedSpotIndex == i ? 4 : 2,
                                     ),
                                     color: Colors.red.withValues(
-                                      alpha: 100, // Semi-transparent red
+                                      alpha: 0.5,
                                     ),
                                   ),
                                 ),
