@@ -28,3 +28,9 @@ In the homepage you can see the list of all the previous campaigns, here you can
 On this page you can take pictures that will show up on the gallery; once you shoot a photo a message will appear saying: "Picture saved!", along with a button that will transefer you on the gallery screen. If an image can't be taken another message will apper saying: "Error taking picture".
 ### campaign
 Here you will find all the images tha where taken, unless they where deleted; you can click on the photos to see some info, like when the picture was taken and the name of the picture. By default the images' names are all blank, but you can modify them by clicking on a button called: "Edit name".
+#### single photo
+here you can see soe informatione about a singular photo, like the date when the picture was taken or all the annotations. On this page you can add and edit the spots that highlight the moles.
+### mole gallery
+Qui ci sono tutti i nei, eventualmnte ci sarà un'immagine rappresenttiva e poche informazioni caratteristiche usate per distinguere un neo dall'altro.
+### mole info
+Qui c'è un focus su un singolo neo: in questa pagina si trovano tutte le informazioni e annotazioni riguardanti un solo neo.

@@ -163,7 +163,9 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                               final Offset transformedPosition = Offset(transformed.x, transformed.y);
 
                               setState(() {
-                                widget.photo.spots.add(Spot(position: transformedPosition, radius: 30));
+                                widget.photo.spots.add(Spot(
+                                  position: transformedPosition, radius: 30, moleId:"Unknown"
+                                  ));
                                 selectedSpotIndex = widget.photo.spots.length - 1;
                                 markAction = MarkAction.none;
                               });
