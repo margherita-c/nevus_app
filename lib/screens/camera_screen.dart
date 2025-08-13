@@ -52,8 +52,9 @@ class CameraScreenState extends State<CameraScreen> {
       await picture.saveTo(imagePath);
 
       final newPhoto = Photo(
+        id: 'photo_${DateTime.now().millisecondsSinceEpoch}', // Generate unique ID
         path: imagePath,
-        dateTaken: DateTime.now.toString(),
+        dateTaken: DateTime.now().toString(),
         moleName: '', // or prompt user for a name
       );
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/photo.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
+import 'dart:developer' as developer;
 
 class SinglePhotoScreen extends StatefulWidget {
   final Photo photo;
@@ -77,6 +78,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                 markMode = !markMode;
                 markAction = MarkAction.none;
                 selectedSpotIndex = null; // Clear selection when exiting mark mode
+                developer.log("Mark mode toggled: $markMode", name: 'SinglePhotoScreen');
               });
             },
           ),

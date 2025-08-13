@@ -33,7 +33,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     });
   }
 
-Future<void> _saveImages() async {
+  Future<void> _saveImages() async {
     await PhotoStorage.savePhotos(_imageFiles);
   }
 
@@ -41,9 +41,11 @@ Future<void> _saveImages() async {
   void _editMoleName(int index, String newName) async {
     setState(() {
       _imageFiles[index] = Photo(
+        id: _imageFiles[index].id, // Keep the existing ID
         path: _imageFiles[index].path,
-        dateTaken: _imageFiles[index].dateTaken,
-        moleName: newName,
+        dateTaken: _imageFiles[index].dateTaken, // Add if required
+        moleName: newName, // Add if required
+        // ...add any other required parameters...
       );
     });
     await _saveImages();
@@ -162,3 +164,11 @@ Future<void> _saveImages() async {
     );
   }
 }
+
+/* final photo = Photo(
+  id: 'photo_${DateTime.now().millisecondsSinceEpoch}', // Add unique ID
+  path: imagePath,
+  dateTaken: DateTime.now().toString(),
+  moleName: moleName,
+  // ...other required parameters...
+); */

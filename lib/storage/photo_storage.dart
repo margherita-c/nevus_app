@@ -33,4 +33,22 @@ class PhotoStorage {
       return [];
     }
   }
+
+  static Future<void> updatePhoto(Photo updatedPhoto) async {
+    final photos = await loadPhotos();
+    final index = photos.indexWhere((photo) => photo.id == updatedPhoto.id);
+    if (index != -1) {
+      photos[index] = updatedPhoto;
+      await savePhotos(photos);
+      developer.log('Photo with ID ${updatedPhoto.id} updated', name: 'CameraScreen');
+    }
+  }
+
+  static Future<void> updatePhotoAtIndex(int index, Photo updatedPhoto) async {
+    final photos = await loadPhotos();
+    if (index >= 0 && index < photos.length) {
+      photos[index] = updatedPhoto;
+      await savePhotos(photos);
+    }
+  }
 }

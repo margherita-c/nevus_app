@@ -20,30 +20,34 @@ class Spot {
 }
 
 class Photo {
-  String path;
-  String moleName;
-  String dateTaken;
+  final String id;           // Add this line
+  final String path;
+  final String dateTaken;
+  final String moleName;
   List<Spot> spots;
 
   Photo({
+    required this.id,        // Add this parameter
     required this.path,
-    required this.moleName,
     required this.dateTaken,
+    required this.moleName,
     List<Spot>? spots,
   }) : spots = spots ?? [];
 
   // Optional: Serialization methods
   Map<String, dynamic> toJson() => {
+    'id': id,              // Add this line
     'path': path,
-    'moleName': moleName,
     'dateTaken': dateTaken,
+    'moleName': moleName,
     'spots': spots.map((s) => s.toJson()).toList(),
   };
 
   factory Photo.fromJson(Map<String, dynamic> json) => Photo(
+    id: json['id'],        // Add this line
     path: json['path'],
-    moleName: json['moleName'],
     dateTaken: json['dateTaken'],
+    moleName: json['moleName'],
     spots: (json['spots'] as List<dynamic>?)
         ?.map((s) => Spot.fromJson(s))
         .toList() ?? [],
