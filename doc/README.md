@@ -5,6 +5,7 @@ Nevus is an app whose purpose is to help people check and track the status of th
 - place the moles on a human figure, so that its location will be known even without a photo of it
 
 ## Data model
+All the data is stored into json files that are loaded and saved when entering or exiting form a screen.
 ### Photo
 Photos are linked to only one campaign, each image can contain more than one mole, has a list of spots identify each mole and its position. Each photo contains a description that identifies which region of the body the picture rapresents, photos that depict the same area will be stored together in a specific folder.
 ### Spot
