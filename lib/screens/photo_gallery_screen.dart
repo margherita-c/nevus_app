@@ -44,7 +44,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         id: _imageFiles[index].id, // Keep the existing ID
         path: _imageFiles[index].path,
         dateTaken: _imageFiles[index].dateTaken, // Add if required
-        moleName: newName, // Add if required
+        //moleName: newName, // Add if required
         // ...add any other required parameters...
       );
     });

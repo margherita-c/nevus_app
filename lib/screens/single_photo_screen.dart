@@ -232,10 +232,10 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                 ),
               ),
             const SizedBox(height: 16),
-            Text('Mole: ${widget.photo.moleName}', style: const TextStyle(fontSize: 20)),
+            //Text('Mole: ${widget.photo.moleName}', style: const TextStyle(fontSize: 20)),
             Text('Date: ${widget.photo.dateTaken}', style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 24),
-            ElevatedButton(
+            /* ElevatedButton(
               onPressed: () async {
                 String? newName = await showDialog<String>(
                   context: context,
@@ -269,7 +269,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                 }
               },
               child: const Text('Edit Name'),
-            ),
+            ), */
           ],
         ),
       ),

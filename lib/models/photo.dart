@@ -46,7 +46,7 @@ class Photo {
   /// 
   /// Can be empty initially and edited later by the user.
   /// Examples: "Mole on back", "Suspicious spot on arm", etc.
-  final String moleName;
+  //final String moleName;
   
   /// List of spots marked on this photo.
   /// 
@@ -65,7 +65,7 @@ class Photo {
     required this.id,
     required this.path,
     required this.dateTaken,
-    required this.moleName,
+    //required this.moleName,
     List<Spot>? spots,
   }) : spots = spots ?? [];
 
@@ -80,7 +80,7 @@ class Photo {
     'id': id,
     'path': path,
     'dateTaken': dateTaken.toIso8601String(),
-    'moleName': moleName,
+   // 'moleName': moleName,
     'spots': spots.map((s) => s.toJson()).toList(),
   };
 
@@ -96,7 +96,7 @@ class Photo {
     id: json['id'],
     path: json['path'],
     dateTaken: DateTime.parse(json['dateTaken']),
-    moleName: json['moleName'],
+    //moleName: json['moleName'],
     spots: (json['spots'] as List<dynamic>?)
         ?.map((s) => Spot.fromJson(s))
         .toList() ?? [],

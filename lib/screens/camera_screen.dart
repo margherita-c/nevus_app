@@ -55,7 +55,7 @@ class CameraScreenState extends State<CameraScreen> {
         id: 'photo_${DateTime.now().millisecondsSinceEpoch}', // Generate unique ID
         path: imagePath,
         dateTaken: DateTime.now(),
-        moleName: '', // or prompt user for a name
+        //moleName: '', // or prompt user for a name
       );
 
       // Load, add, and save
