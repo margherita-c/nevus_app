@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/material.dart'; // Offset is in here
 import '../models/photo.dart';
+import '../models/spot.dart';
 
 class PhotoStorage {
   static Future<String> get _localPath async {
@@ -49,6 +51,36 @@ class PhotoStorage {
     if (index >= 0 && index < photos.length) {
       photos[index] = updatedPhoto;
       await savePhotos(photos);
+    }
+  }
+
+  // Add this to PhotoStorage class for testing
+  static Future<void> debugSpotSaving() async {
+    // Create a test photo with spots
+    final testPhoto = Photo(
+      id: 'test_photo',
+      path: '/test/path.jpg',
+      dateTaken: DateTime.now(),
+      spots: [
+        Spot(position: Offset(100, 150), radius: 25.0, moleId: 'test_mole'),
+      ],
+    );
+    
+    // Save it
+    await savePhotos([testPhoto]);
+    
+    // Load it back
+    final loadedPhotos = await loadPhotos();
+    final loadedPhoto = loadedPhotos.first;
+    
+    // Check if spots were preserved
+    developer.log('Original spots: ${testPhoto.spots.length}', name: 'SpotTest');
+    developer.log('Loaded spots: ${loadedPhoto.spots.length}', name: 'SpotTest');
+    
+    if (loadedPhoto.spots.isNotEmpty) {
+      final spot = loadedPhoto.spots.first;
+      developer.log('Spot position: ${spot.position}', name: 'SpotTest');
+      developer.log('Spot moleId: ${spot.moleId}', name: 'SpotTest');
     }
   }
 }

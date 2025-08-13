@@ -80,7 +80,6 @@ class Photo {
     'id': id,
     'path': path,
     'dateTaken': dateTaken.toIso8601String(),
-   // 'moleName': moleName,
     'spots': spots.map((s) => s.toJson()).toList(),
   };
 
