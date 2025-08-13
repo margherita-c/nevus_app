@@ -3,6 +3,7 @@ import 'dart:io';
 import '../models/photo.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'dart:developer' as developer;
+import '../models/spot.dart';
 
 class SinglePhotoScreen extends StatefulWidget {
   final Photo photo;
