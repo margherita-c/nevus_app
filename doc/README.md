@@ -6,11 +6,14 @@ Nevus is an app whose purpose is to help people check and track the status of th
 
 ## Data model
 ### Photo
-Photos are linked to only one campaign, each image can contain more than one mole, has a list with each one of said moles and knows their position. Each photo contains a description that identifies which region of the body the picture rapresents, photos that depict the same area will be stored together in a specific folder.
+Photos are linked to only one campaign, each image can contain more than one mole, has a list of spots identify each mole and its position. Each photo contains a description that identifies which region of the body the picture rapresents, photos that depict the same area will be stored together in a specific folder.
+### Spot
+Spots are annotations on a specific Photo that highlight moles, each spot contains info about the mole it identifies, like an ID, its position and its size. 
 ### Campaign
 Campaigns are linked to a date and represent the group of photos taken in a specific moment (day, week) to track your moles.
 ### Mole
-Every mole has to have a short identification, that describes its position, a description and a list of all the photos in which it appears.
+Every mole has an unique Id, a short string that describes it, a long description and 
+an automatic method that retrieves all the photos where it appears.
 
 ## Screens
 ### auth_screen
