@@ -164,11 +164,3 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     );
   }
 }
-
-/* final photo = Photo(
-  id: 'photo_${DateTime.now().millisecondsSinceEpoch}', // Add unique ID
-  path: imagePath,
-  dateTaken: DateTime.now().toString(),
-  moleName: moleName,
-  // ...other required parameters...
-); */
