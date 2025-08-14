@@ -4,18 +4,19 @@ import '../models/photo.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'dart:developer' as developer;
 import '../models/spot.dart';
+import '../storage/user_storage.dart'; // Add this import
 
 class SinglePhotoScreen extends StatefulWidget {
   final Photo photo;
   final int index;
-  final void Function(int, String) onEditMoleName;
+  final void Function(int, String) onEditDescription; // Changed from onEditMoleName
   final void Function(int) onDelete;
 
   const SinglePhotoScreen({
     super.key,
     required this.photo,
     required this.index,
-    required this.onEditMoleName,
+    required this.onEditDescription,
     required this.onDelete,
   });
 
@@ -29,13 +30,22 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
   bool markMode = false;
   int? selectedSpotIndex;
   MarkAction markAction = MarkAction.none;
-  final TransformationController _transformationController = TransformationController(); // Add this
+  final TransformationController _transformationController = TransformationController();
+
+  Future<void> _savePhotoChanges() async {
+    // Save the photo with updated spots using UserStorage
+    final photos = await UserStorage.loadPhotos();
+    if (widget.index >= 0 && widget.index < photos.length) {
+      photos[widget.index] = widget.photo;
+      await UserStorage.savePhotos(photos);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Photo Details'),
+        title: const Text('Photo Details'),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete),
@@ -67,18 +77,23 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
           IconButton(
             icon: Icon(
               Icons.edit,
-              color: markMode ? Colors.white : null, // White icon when active
+              color: markMode ? Colors.white : null,
             ),
             style: IconButton.styleFrom(
-              backgroundColor: markMode ? Colors.blue : null, // Blue background when active
-              foregroundColor: markMode ? Colors.white : null, // Ensure white icon
+              backgroundColor: markMode ? Colors.blue : null,
+              foregroundColor: markMode ? Colors.white : null,
             ),
             tooltip: markMode ? 'Exit Mark Mode' : 'Mark Mode',
-            onPressed: () {
+            onPressed: () async {
+              // If exiting mark mode, save changes
+              if (markMode) {
+                await _savePhotoChanges();
+              }
+              
               setState(() {
                 markMode = !markMode;
                 markAction = MarkAction.none;
-                selectedSpotIndex = null; // Clear selection when exiting mark mode
+                selectedSpotIndex = null;
                 developer.log("Mark mode toggled: $markMode", name: 'SinglePhotoScreen');
               });
             },
@@ -99,7 +114,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                       maxScale: 5.0,
                       panEnabled: !markMode,
                       scaleEnabled: !markMode,
-                      transformationController: _transformationController, // Add this
+                      transformationController: _transformationController,
                       child: Stack(
                         children: [
                           // Image as the base layer
@@ -133,14 +148,12 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                                       color: selectedSpotIndex == i ? Colors.blue : Colors.red,
                                       width: selectedSpotIndex == i ? 4 : 2,
                                     ),
-                                    color: Colors.red.withValues(
-                                      alpha: 0.5,
-                                    ),
+                                    color: Colors.red.withValues(alpha: 0.5),
                                   ),
                                 ),
                               ),
                             );
-                          })//.toList(),
+                          }),
                         ],
                       ),
                     ),
@@ -151,7 +164,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                       child: GestureDetector(
                         behavior: HitTestBehavior.translucent,
                         onTapDown: markAction == MarkAction.add
-                          ? (details) {
+                          ? (details) async {
                               // Transform the tap position to account for zoom/pan
                               final Matrix4 transform = _transformationController.value;
                               final Matrix4 invertedTransform = Matrix4.inverted(transform);
@@ -164,15 +177,20 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
 
                               setState(() {
                                 widget.photo.spots.add(Spot(
-                                  position: transformedPosition, radius: 30, moleId:"Unknown"
-                                  ));
+                                  position: transformedPosition, 
+                                  radius: 30, 
+                                  moleId: "mole_${DateTime.now().millisecondsSinceEpoch}"
+                                ));
                                 selectedSpotIndex = widget.photo.spots.length - 1;
                                 markAction = MarkAction.none;
                               });
+                              
+                              // Save changes immediately
+                              await _savePhotoChanges();
                             }
                           : null,
                         onPanUpdate: markAction == MarkAction.drag && selectedSpotIndex != null
-                          ? (details) {
+                          ? (details) async {
                               // Transform the drag delta to account for zoom
                               final double scale = _transformationController.value.getMaxScaleOnAxis();
                               final Offset transformedDelta = details.delta / scale;
@@ -180,6 +198,9 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                               setState(() {
                                 widget.photo.spots[selectedSpotIndex!].position += transformedDelta;
                               });
+                              
+                              // Save changes immediately
+                              await _savePhotoChanges();
                             }
                           : null,
                       ),
@@ -210,11 +231,13 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                               : Colors.black),
                       tooltip: 'Delete Mark',
                       onPressed: selectedSpotIndex != null
-                          ? () {
+                          ? () async {
                               setState(() {
                                 widget.photo.spots.removeAt(selectedSpotIndex!);
                                 selectedSpotIndex = null;
                               });
+                              // Save changes after deletion
+                              await _savePhotoChanges();
                             }
                           : null,
                     ),
@@ -234,20 +257,43 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                 ),
               ),
             const SizedBox(height: 16),
-            //Text('Mole: ${widget.photo.moleName}', style: const TextStyle(fontSize: 20)),
-            Text('Date: ${widget.photo.dateTaken}', style: const TextStyle(color: Colors.grey)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Body Region: ${widget.photo.description.isNotEmpty ? widget.photo.description : "Not specified"}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Date: ${widget.photo.dateTaken.day}/${widget.photo.dateTaken.month}/${widget.photo.dateTaken.year}',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Spots marked: ${widget.photo.spots.length}',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
-            /* ElevatedButton(
+            ElevatedButton(
               onPressed: () async {
-                String? newName = await showDialog<String>(
+                String? newDescription = await showDialog<String>(
                   context: context,
                   builder: (context) {
-                    final controller = TextEditingController(text: widget.photo.moleName);
+                    final controller = TextEditingController(text: widget.photo.description);
                     return AlertDialog(
-                      title: const Text('Edit Mole Name'),
+                      title: const Text('Edit Body Region'),
                       content: TextField(
                         controller: controller,
-                        decoration: const InputDecoration(labelText: 'Mole Name'),
+                        decoration: const InputDecoration(
+                          labelText: 'Body Region Description',
+                          hintText: 'e.g., Left shoulder, Upper back',
+                        ),
                         autofocus: true,
                       ),
                       actions: [
@@ -263,15 +309,15 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
                     );
                   },
                 );
-                if (newName != null && newName.trim().isNotEmpty) {
-                  widget.onEditMoleName(widget.index, newName.trim());
+                if (newDescription != null && newDescription.trim().isNotEmpty) {
+                  widget.onEditDescription(widget.index, newDescription.trim());
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mole name updated!')),
+                    const SnackBar(content: Text('Description updated!')),
                   );
                 }
               },
-              child: const Text('Edit Name'),
-            ), */
+              child: const Text('Edit Description'),
+            ),
           ],
         ),
       ),
@@ -280,7 +326,7 @@ class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
 
   @override
   void dispose() {
-    _transformationController.dispose(); // Don't forget to dispose
+    _transformationController.dispose();
     super.dispose();
   }
 }

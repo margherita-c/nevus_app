@@ -5,9 +5,29 @@ Nevus is an app whose purpose is to help people check and track the status of th
 - place the moles on a human figure, so that its location will be known even without a photo of it
 
 ## Data model
-All the data is stored into json files that are loaded and saved when entering or exiting form a screen.
+Each user has a personal folder named after the user where all the data is stored, when a user doesn't log in the account will be managed as a guest user and the data will be stored in a folder named "guest". The image data inside each user folder is organized in campaigns folders (all the photos relative to one campaign are stored into the same campaign folder).
+All the data is stored into json files that are loaded and saved when entering or exiting form a screen, the json files are stored directly inside of the user folder.
+
+/app_documents/
+└── users/
+    ├── guest/
+    │   ├── photos.json
+    │   ├── campaigns.json
+    │   ├── moles.json
+    │   └── campaigns/
+    │       ├── campaign_001/
+    │       │   ├── photo1.jpg
+    │       │   └── photo2.jpg
+    │       └── campaign_002/
+    └── john_doe/
+        ├── photos.json
+        ├── campaigns.json
+        ├── moles.json
+        └── campaigns/
+            └── campaign_001/
+            
 ### Photo
-Photos are linked to only one campaign, each image can contain more than one mole, has a list of spots identify each mole and its position. Each photo contains a description that identifies which region of the body the picture rapresents, photos that depict the same area will be stored together in a specific folder.
+Photos are linked to only one campaign, each image can contain more than one mole, has a list of spots identify each mole and its position. Each photo contains a description that identifies which region of the body the picture represents.
 ### Spot
 Spots are annotations on a specific Photo that highlight moles, each spot contains info about the mole it identifies, like an ID, its position and its size. 
 ### Campaign

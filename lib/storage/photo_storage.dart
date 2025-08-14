@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/material.dart'; // Offset is in here
+//import 'package:flutter/material.dart'; // Offset is in here
 import '../models/photo.dart';
-import '../models/spot.dart';
+//import '../models/spot.dart';
 
 class PhotoStorage {
   static Future<String> get _localPath async {
@@ -55,7 +55,7 @@ class PhotoStorage {
   }
 
   // Add this to PhotoStorage class for testing
-  static Future<void> debugSpotSaving() async {
+  /* static Future<void> debugSpotSaving() async {
     // Create a test photo with spots
     final testPhoto = Photo(
       id: 'test_photo',
@@ -82,5 +82,5 @@ class PhotoStorage {
       developer.log('Spot position: ${spot.position}', name: 'SpotTest');
       developer.log('Spot moleId: ${spot.moleId}', name: 'SpotTest');
     }
-  }
+  } */
 }

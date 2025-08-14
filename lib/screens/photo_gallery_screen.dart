@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-//import 'package:path_provider/path_provider.dart';
-//import 'dart:developer' as developer;
 import 'dart:io';
 import 'camera_screen.dart';
 import '../models/photo.dart';
-import '../storage/photo_storage.dart';
+import '../storage/user_storage.dart'; // Changed from photo_storage
 import 'single_photo_screen.dart';
 
 class PhotoGalleryScreen extends StatefulWidget {
@@ -26,7 +24,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
 
   Future<void> _loadImages() async {
     setState(() => _isLoading = true);
-    final photos = await PhotoStorage.loadPhotos();
+    final photos = await UserStorage.loadPhotos(); // Changed to UserStorage
     setState(() {
       _imageFiles = photos;
       _isLoading = false;
@@ -34,42 +32,35 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   }
 
   Future<void> _saveImages() async {
-    await PhotoStorage.savePhotos(_imageFiles);
+    await UserStorage.savePhotos(_imageFiles); // Changed to UserStorage
   }
 
-  // Example: Call this after editing a mole name
-  void _editMoleName(int index, String newName) async {
+  void _editPhotoDescription(int index, String newDescription) async {
     setState(() {
       _imageFiles[index] = Photo(
-        id: _imageFiles[index].id, // Keep the existing ID
+        id: _imageFiles[index].id,
         path: _imageFiles[index].path,
-        dateTaken: _imageFiles[index].dateTaken, // Add if required
-        //moleName: newName, // Add if required
-        // ...add any other required parameters...
+        dateTaken: _imageFiles[index].dateTaken,
+        description: newDescription, // Update description instead of moleName
+        campaignId: _imageFiles[index].campaignId,
+        spots: _imageFiles[index].spots,
       );
     });
     await _saveImages();
   }
   
- Future<void> _deleteImage(int index) async {
+  Future<void> _deleteImage(int index) async {
     setState(() {
       _imageFiles.removeAt(index);
     });
     await _saveImages();
   }
 
-  /* void _addPhoto(Photo newPhoto) async {
-    setState(() {
-      _imageFiles.add(newPhoto);
-    });
-    await _saveImages();
-  }
- */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Photo Gallery'),
+        title: Text('Photo Gallery - ${UserStorage.currentUser.username}'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
@@ -123,7 +114,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             builder: (_) => SinglePhotoScreen(
                               photo: photo,
                               index: index,
-                              onEditMoleName: _editMoleName,
+                              onEditDescription: _editPhotoDescription, // Changed from onEditMoleName
                               onDelete: (i) async => await _deleteImage(i),
                             ),
                           ),
@@ -140,12 +131,66 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             ),
                           ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: Image.file(
-                            File(photo.path),
-                            fit: BoxFit.cover,
-                          ),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.file(
+                                File(photo.path),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
+                            ),
+                            // Photo description overlay
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(8.0),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.bottomCenter,
+                                    end: Alignment.topCenter,
+                                    colors: [
+                                      Colors.black.withValues(alpha: 0.8),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                  borderRadius: const BorderRadius.only(
+                                    bottomLeft: Radius.circular(8.0),
+                                    bottomRight: Radius.circular(8.0),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      photo.description.isNotEmpty 
+                                        ? photo.description 
+                                        : 'No description',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      '${photo.spots.length} spots',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );

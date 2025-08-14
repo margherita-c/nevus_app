@@ -6,7 +6,8 @@ import 'spot.dart';
 /// - Unique identification
 /// - File system path to the image
 /// - Timestamp of when it was taken
-/// - User-assigned name for the mole
+/// - Body region description
+/// - Campaign association
 /// - List of marked spots for tracking changes
 /// 
 /// Photos are the core data structure of the nevus app, allowing users
@@ -42,18 +43,24 @@ class Photo {
   /// - Tracking mole changes over time
   final DateTime dateTaken;
   
-  /// User-assigned name for the mole in this photo.
+  /// Description of which body region this photo represents.
   /// 
-  /// Can be empty initially and edited later by the user.
-  /// Examples: "Mole on back", "Suspicious spot on arm", etc.
-  //final String moleName;
+  /// Examples: "Left shoulder", "Upper back", "Right arm", "Chest", etc.
+  /// This helps users organize and identify photos by body location.
+  final String description;
+  
+  /// ID of the campaign this photo belongs to.
+  /// 
+  /// Links this photo to a specific tracking session/campaign.
+  /// Used for organizing photos by date and tracking sessions.
+  final String campaignId;
   
   /// List of spots marked on this photo.
   /// 
   /// Users can add circular markers to highlight areas of interest
   /// on the mole photo. These spots persist with the photo and can
   /// be used to track changes over time.
-  List<Spot>  spots;
+  List<Spot> spots;
 
   /// Creates a new photo with the specified metadata.
   /// 
@@ -65,7 +72,8 @@ class Photo {
     required this.id,
     required this.path,
     required this.dateTaken,
-    //required this.moleName,
+    required this.description,
+    required this.campaignId,
     List<Spot>? spots,
   }) : spots = spots ?? [];
 
@@ -80,6 +88,8 @@ class Photo {
     'id': id,
     'path': path,
     'dateTaken': dateTaken.toIso8601String(),
+    'description': description,
+    'campaignId': campaignId,
     'spots': spots.map((s) => s.toJson()).toList(),
   };
 
@@ -95,7 +105,8 @@ class Photo {
     id: json['id'],
     path: json['path'],
     dateTaken: DateTime.parse(json['dateTaken']),
-    //moleName: json['moleName'],
+    description: json['description'] ?? '',
+    campaignId: json['campaignId'] ?? '',
     spots: (json['spots'] as List<dynamic>?)
         ?.map((s) => Spot.fromJson(s))
         .toList() ?? [],
