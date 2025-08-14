@@ -1,21 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import '../models/campaign.dart';
+import 'user_storage.dart';
 
 class CampaignStorage {
-  static Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
-  }
-
+  /// Gets the campaigns JSON file for the current user
   static Future<File> get _localFile async {
-    final path = await _localPath;
-    return File('$path/campaigns.json');
+    final userDir = await UserStorage.getUserDirectory();
+    return File('$userDir/campaigns.json');
   }
 
   static Future<List<Campaign>> loadCampaigns() async {
     try {
+      await UserStorage.ensureUserDirectoryExists();
       final file = await _localFile;
       if (!await file.exists()) {
         return [];
@@ -29,6 +26,7 @@ class CampaignStorage {
   }
 
   static Future<void> saveCampaigns(List<Campaign> campaigns) async {
+    await UserStorage.ensureUserDirectoryExists();
     final file = await _localFile;
     final jsonData = campaigns.map((campaign) => campaign.toJson()).toList();
     await file.writeAsString(json.encode(jsonData));

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'camera_screen.dart';
 import 'photo_gallery_screen.dart';
+import 'campaigns_screen.dart'; // Add this import
 import '../storage/user_storage.dart';
+import '../storage/campaign_storage.dart'; // Add this import
+import '../models/campaign.dart'; // Add this import
 import 'auth_screen.dart';
 import '../models/user.dart';
+import 'campaign_detail_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,7 +17,82 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  
+  List<Campaign> _campaigns = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCampaigns();
+  }
+
+  Future<void> _loadCampaigns() async {
+    setState(() => _isLoading = true);
+    final campaigns = await CampaignStorage.loadCampaigns();
+    setState(() {
+      _campaigns = campaigns;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _createNewCampaign() async {
+    final campaignName = await _showCreateCampaignDialog();
+    if (campaignName != null && campaignName.isNotEmpty) {
+      final newCampaign = Campaign(
+        id: 'campaign_${DateTime.now().millisecondsSinceEpoch}',
+        date: DateTime.now(),
+      );
+      
+      await CampaignStorage.addCampaign(newCampaign);
+      await _loadCampaigns();
+      
+      // Navigate to camera to start taking photos for this campaign
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CameraScreen(campaignId: newCampaign.id),
+          ),
+        ).then((_) => _loadCampaigns());
+      }
+    }
+  }
+
+  Future<String?> _showCreateCampaignDialog() async {
+    final controller = TextEditingController();
+    return await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create New Campaign'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Start a new mole tracking session'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: 'Campaign Name (Optional)',
+                hintText: 'e.g., Monthly Check - ${DateTime.now().month}/${DateTime.now().year}',
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -116,32 +195,108 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CameraScreen()),
-                );
-              },
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Take Photo'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
+            
+            // Quick Actions
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _createNewCampaign,
+                    icon: const Icon(Icons.add_a_photo),
+                    label: const Text('New Campaign'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PhotoGalleryScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('All Photos'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PhotoGalleryScreen()),
-                );
-              },
-              icon: const Icon(Icons.photo_library),
-              label: const Text('View Gallery'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
+            
+            const SizedBox(height: 24),
+            
+            // Recent Campaigns Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Recent Campaigns',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CampaignsScreen()),
+                    ).then((_) => _loadCampaigns());
+                  },
+                  child: const Text('View All'),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Campaigns List
+            Expanded(
+              child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _campaigns.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.campaign, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            'No campaigns yet',
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                          Text(
+                            'Create your first campaign to start tracking',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _campaigns.take(3).length, // Show only 3 recent
+                      itemBuilder: (context, index) {
+                        final campaign = _campaigns[index];
+                        return Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.folder),
+                            title: Text('Campaign ${campaign.date.day}/${campaign.date.month}/${campaign.date.year}'),
+                            subtitle: Text('${campaign.photoIds.length} photos'),
+                            trailing: const Icon(Icons.arrow_forward_ios),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CampaignDetailScreen(campaign: campaign),
+                                ),
+                              ).then((_) => _loadCampaigns());
+                            },
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

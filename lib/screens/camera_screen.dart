@@ -150,7 +150,15 @@ class CameraScreenState extends State<CameraScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.campaignId != null ? 'Campaign Photo' : 'Camera'),
+        title: Row(
+          children: [
+            Text(widget.campaignId != null ? 'Campaign Photo' : 'Camera'),
+            if (!UserStorage.currentUser.isGuest) ...[
+              const Text(' - '),
+              Text(UserStorage.currentUser.username),
+            ],
+          ],
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
