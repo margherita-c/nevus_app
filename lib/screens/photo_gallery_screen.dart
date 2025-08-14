@@ -60,7 +60,15 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Photo Gallery - ${UserStorage.currentUser.username}'),
+        title: Row(
+          children: [
+            const Text('Gallery'),
+            if (!UserStorage.currentUser.isGuest) ...[
+              const Text(' - '),
+              Text(UserStorage.currentUser.username),
+            ],
+          ],
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
