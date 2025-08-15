@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'camera_screen.dart';
 import '../models/photo.dart';
-import '../storage/user_storage.dart'; // Changed from photo_storage
+import '../storage/user_storage.dart';
 import 'single_photo_screen.dart';
+import '../widgets/app_bar_title.dart'; // Add this import
+import '../widgets/photo_grid_item.dart'; // Add this import
 
 class PhotoGalleryScreen extends StatefulWidget {
   const PhotoGalleryScreen({super.key});
@@ -24,7 +25,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
 
   Future<void> _loadImages() async {
     setState(() => _isLoading = true);
-    final photos = await UserStorage.loadPhotos(); // Changed to UserStorage
+    final photos = await UserStorage.loadPhotos();
     setState(() {
       _imageFiles = photos;
       _isLoading = false;
@@ -32,7 +33,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   }
 
   Future<void> _saveImages() async {
-    await UserStorage.savePhotos(_imageFiles); // Changed to UserStorage
+    await UserStorage.savePhotos(_imageFiles);
   }
 
   void _editPhotoDescription(int index, String newDescription) async {
@@ -41,7 +42,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         id: _imageFiles[index].id,
         path: _imageFiles[index].path,
         dateTaken: _imageFiles[index].dateTaken,
-        description: newDescription, // Update description instead of moleName
+        description: newDescription,
         campaignId: _imageFiles[index].campaignId,
         spots: _imageFiles[index].spots,
       );
@@ -60,15 +61,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Gallery'),
-            if (!UserStorage.currentUser.isGuest) ...[
-              const Text(' - '),
-              Text(UserStorage.currentUser.username),
-            ],
-          ],
-        ),
+        title: const AppBarTitle(title: 'Gallery'), // Updated to use widget
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
@@ -114,7 +107,8 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                   itemCount: _imageFiles.length,
                   itemBuilder: (context, index) {
                     final photo = _imageFiles[index];
-                    return GestureDetector(
+                    return PhotoGridItem( // Updated to use widget
+                      photo: photo,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -122,85 +116,12 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                             builder: (_) => SinglePhotoScreen(
                               photo: photo,
                               index: index,
-                              onEditDescription: _editPhotoDescription, // Changed from onEditMoleName
+                              onEditDescription: _editPhotoDescription,
                               onDelete: (i) async => await _deleteImage(i),
                             ),
                           ),
                         );
                       },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha((0.2 * 255).toInt()),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8.0),
-                              child: Image.file(
-                                File(photo.path),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                              ),
-                            ),
-                            // Photo description overlay
-                            Positioned(
-                              bottom: 0,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(8.0),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                    colors: [
-                                      Colors.black.withValues(alpha: 0.8),
-                                      Colors.transparent,
-                                    ],
-                                  ),
-                                  borderRadius: const BorderRadius.only(
-                                    bottomLeft: Radius.circular(8.0),
-                                    bottomRight: Radius.circular(8.0),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      photo.description.isNotEmpty 
-                                        ? photo.description 
-                                        : 'No description',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      '${photo.spots.length} spots',
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     );
                   },
                 ),

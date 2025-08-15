@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/campaign.dart';
 import '../storage/campaign_storage.dart';
-import '../storage/user_storage.dart';
-import 'camera_screen.dart';
 import 'campaign_detail_screen.dart';
+import '../services/campaign_service.dart'; // Add this import
+import '../widgets/app_bar_title.dart'; // Add this import
 
 class CampaignsScreen extends StatefulWidget {
   const CampaignsScreen({super.key});
@@ -32,132 +32,17 @@ class _CampaignsScreenState extends State<CampaignsScreen> {
   }
 
   Future<void> _createNewCampaign() async {
-    final selectedDate = await _showCreateCampaignDialog();
-    if (selectedDate != null) {
-      // Check if a campaign with this date already exists
-      final existingCampaigns = await CampaignStorage.loadCampaigns();
-      final dateExists = existingCampaigns.any((campaign) => 
-        _isSameDate(campaign.date, selectedDate)
-      );
-      
-      if (dateExists) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('A campaign for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year} already exists'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-      
-      final newCampaign = Campaign(
-        id: 'campaign_${selectedDate.millisecondsSinceEpoch}',
-        date: selectedDate,
-      );
-      
-      await CampaignStorage.addCampaign(newCampaign);
+    final newCampaign = await CampaignService.createNewCampaign(context);
+    if (newCampaign != null) {
       await _loadCampaigns();
-      
-      // Navigate to camera to start taking photos for this campaign
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CameraScreen(campaignId: newCampaign.id),
-          ),
-        ).then((_) => _loadCampaigns());
-      }
     }
-  }
-
-  Future<DateTime?> _showCreateCampaignDialog() async {
-    DateTime selectedDate = DateTime.now();
-    
-    return await showDialog<DateTime>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Create New Campaign'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Select the date for this mole tracking session'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () async {
-                        final DateTime? pickedDate = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime.now().add(const Duration(days: 1)),
-                        );
-                        if (pickedDate != null) {
-                          setState(() {
-                            selectedDate = pickedDate;
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, selectedDate),
-              child: const Text('Create'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<int> _getActualPhotoCount(String campaignId) async {
-    final allPhotos = await UserStorage.loadPhotos();
-    return allPhotos.where((photo) => photo.campaignId == campaignId).length;
-  }
-
-  bool _isSameDate(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Campaigns'),
-            if (!UserStorage.currentUser.isGuest) ...[
-              const Text(' - '),
-              Text(UserStorage.currentUser.username),
-            ],
-          ],
-        ),
+        title: const AppBarTitle(title: 'Campaigns'), // Updated to use widget
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
@@ -198,7 +83,7 @@ class _CampaignsScreenState extends State<CampaignsScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: FutureBuilder<int>(
-                      future: _getActualPhotoCount(campaign.id),
+                      future: CampaignService.getActualPhotoCount(campaign.id), // Updated to use service
                       builder: (context, snapshot) {
                         final photoCount = snapshot.data ?? campaign.photoIds.length;
                         return CircleAvatar(
@@ -215,7 +100,7 @@ class _CampaignsScreenState extends State<CampaignsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         FutureBuilder<int>(
-                          future: _getActualPhotoCount(campaign.id),
+                          future: CampaignService.getActualPhotoCount(campaign.id), // Updated to use service
                           builder: (context, snapshot) {
                             final photoCount = snapshot.data ?? campaign.photoIds.length;
                             return Text('$photoCount photos');
