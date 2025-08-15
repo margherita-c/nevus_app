@@ -36,11 +36,29 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _createNewCampaign() async {
-    final campaignName = await _showCreateCampaignDialog();
-    if (campaignName != null && campaignName.isNotEmpty) {
+    final selectedDate = await _showCreateCampaignDialog();
+    if (selectedDate != null) {
+      // Check if a campaign with this date already exists
+      final existingCampaigns = await CampaignStorage.loadCampaigns();
+      final dateExists = existingCampaigns.any((campaign) => 
+        _isSameDate(campaign.date, selectedDate)
+      );
+      
+      if (dateExists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('A campaign for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year} already exists'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+      
       final newCampaign = Campaign(
-        id: 'campaign_${DateTime.now().millisecondsSinceEpoch}',
-        date: DateTime.now(),
+        id: 'campaign_${selectedDate.millisecondsSinceEpoch}',
+        date: selectedDate,
       );
       
       await CampaignStorage.addCampaign(newCampaign);
@@ -58,37 +76,64 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<String?> _showCreateCampaignDialog() async {
-    final controller = TextEditingController();
-    return await showDialog<String>(
+  Future<DateTime?> _showCreateCampaignDialog() async {
+    DateTime selectedDate = DateTime.now();
+    
+    return await showDialog<DateTime>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New Campaign'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Start a new mole tracking session'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: 'Campaign Name (Optional)',
-                hintText: 'e.g., Monthly Check - ${DateTime.now().month}/${DateTime.now().year}',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Create New Campaign'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Select the date for this mole tracking session'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        final DateTime? pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now().add(const Duration(days: 1)),
+                        );
+                        if (pickedDate != null) {
+                          setState(() {
+                            selectedDate = pickedDate;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
-              autofocus: true,
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, selectedDate),
+              child: const Text('Create'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Create'),
-          ),
-        ],
       ),
     );
   }
@@ -127,6 +172,12 @@ class _HomePageState extends State<HomePage> {
   Future<int> _getActualPhotoCount(String campaignId) async {
     final allPhotos = await UserStorage.loadPhotos();
     return allPhotos.where((photo) => photo.campaignId == campaignId).length;
+  }
+
+  bool _isSameDate(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+           date1.month == date2.month &&
+           date1.day == date2.day;
   }
 
   @override
