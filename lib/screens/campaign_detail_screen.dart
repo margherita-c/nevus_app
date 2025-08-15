@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 import '../models/campaign.dart';
 import '../models/photo.dart';
 import '../storage/user_storage.dart';
 import '../storage/campaign_storage.dart';
 import 'camera_screen.dart';
 import 'single_photo_screen.dart';
-import '../widgets/photo_grid_item.dart'; // Add this import
+import '../widgets/photo_grid_item.dart';
 
 class CampaignDetailScreen extends StatefulWidget {
   final Campaign campaign;
@@ -19,6 +22,7 @@ class CampaignDetailScreen extends StatefulWidget {
 class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
   List<Photo> _campaignPhotos = [];
   bool _isLoading = true;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -37,6 +41,179 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       _campaignPhotos = campaignPhotos;
       _isLoading = false;
     });
+  }
+
+  Future<void> _importPhotos() async {
+    try {
+      // Allow user to select multiple images
+      final List<XFile> images = await _picker.pickMultiImage(
+        imageQuality: 85, // Compress images to save space
+      );
+
+      if (images.isEmpty) return;
+
+      // Show loading dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Importing photos...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Ensure campaign directory exists
+      await UserStorage.ensureCampaignDirectoryExists(widget.campaign.id);
+      final campaignDir = await UserStorage.getCampaignDirectory(widget.campaign.id);
+
+      List<Photo> newPhotos = [];
+      List<String> newPhotoIds = [];
+
+      for (int i = 0; i < images.length; i++) {
+        final image = images[i];
+        
+        // Create unique filename
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final extension = path.extension(image.path);
+        final fileName = 'imported_${timestamp}_$i$extension';
+        final destinationPath = path.join(campaignDir, fileName);
+
+        // Copy image to campaign directory
+        final File sourceFile = File(image.path);
+        await sourceFile.copy(destinationPath);
+
+        // Get description for this photo
+        String? description;
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          description = await _showDescriptionDialog(i + 1, images.length);
+          if (description == null) {
+            // User cancelled, clean up and stop
+            await File(destinationPath).delete();
+            break;
+          }
+          // Show loading dialog again if more photos to process
+          if (i < images.length - 1) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Importing photos... (${i + 2}/${images.length})'),
+                  ],
+                ),
+              ),
+            );
+          }
+        }
+
+        // Create Photo object
+        final newPhoto = Photo(
+          id: 'imported_photo_${timestamp}_$i',
+          path: destinationPath,
+          dateTaken: DateTime.now(), // Use import time as date taken
+          description: description ?? 'Imported photo',
+          campaignId: widget.campaign.id,
+        );
+
+        newPhotos.add(newPhoto);
+        newPhotoIds.add(newPhoto.id);
+      }
+
+      if (newPhotos.isNotEmpty) {
+        // Add photos to storage
+        final allPhotos = await UserStorage.loadPhotos();
+        allPhotos.addAll(newPhotos);
+        await UserStorage.savePhotos(allPhotos);
+
+        // Update campaign photoIds
+        final campaigns = await CampaignStorage.loadCampaigns();
+        final campaignIndex = campaigns.indexWhere((c) => c.id == widget.campaign.id);
+        if (campaignIndex != -1) {
+          campaigns[campaignIndex].photoIds.addAll(newPhotoIds);
+          await CampaignStorage.saveCampaigns(campaigns);
+        }
+
+        // Reload campaign photos
+        await _loadCampaignPhotos();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully imported ${newPhotos.length} photo(s)'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+
+      // Close loading dialog if still open
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error importing photos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<String?> _showDescriptionDialog(int currentPhoto, int totalPhotos) async {
+    final controller = TextEditingController();
+    return await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Describe Photo $currentPhoto of $totalPhotos'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Which body region does this photo show?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Body Region',
+                hintText: 'e.g., Left shoulder, Upper back, Right arm',
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // This returns null
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _deleteCampaign() async {
@@ -122,7 +299,12 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                 ),
               ).then((_) => _loadCampaignPhotos());
             },
-            tooltip: 'Add Photo',
+            tooltip: 'Take Photo',
+          ),
+          IconButton(
+            icon: const Icon(Icons.photo_library_outlined),
+            onPressed: _importPhotos,
+            tooltip: 'Import Photos',
           ),
           PopupMenuButton(
             onSelected: (value) {
@@ -172,20 +354,45 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
             child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _campaignPhotos.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.photo_library, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
+                        const Icon(Icons.photo_library, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text(
                           'No photos in this campaign',
                           style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Tap the camera button to add photos',
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Take photos with the camera or import from gallery',
+                          textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+                                  ),
+                                ).then((_) => _loadCampaignPhotos());
+                              },
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Take Photo'),
+                            ),
+                            const SizedBox(width: 16),
+                            ElevatedButton.icon(
+                              onPressed: _importPhotos,
+                              icon: const Icon(Icons.photo_library_outlined),
+                              label: const Text('Import Photos'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -200,7 +407,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                     itemCount: _campaignPhotos.length,
                     itemBuilder: (context, index) {
                       final photo = _campaignPhotos[index];
-                      return PhotoGridItem( // Updated to use widget
+                      return PhotoGridItem(
                         photo: photo,
                         onTap: () {
                           Navigator.push(
@@ -230,7 +437,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
             ),
           ).then((_) => _loadCampaignPhotos());
         },
-        tooltip: 'Add Photo',
+        tooltip: 'Take Photo',
         child: const Icon(Icons.camera_alt),
       ),
     );
