@@ -124,6 +124,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<int> _getActualPhotoCount(String campaignId) async {
+    final allPhotos = await UserStorage.loadPhotos();
+    return allPhotos.where((photo) => photo.campaignId == campaignId).length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = UserStorage.currentUser;
@@ -283,7 +288,13 @@ class _HomePageState extends State<HomePage> {
                           child: ListTile(
                             leading: const Icon(Icons.folder),
                             title: Text('Campaign ${campaign.date.day}/${campaign.date.month}/${campaign.date.year}'),
-                            subtitle: Text('${campaign.photoIds.length} photos'),
+                            subtitle: FutureBuilder<int>(
+                              future: _getActualPhotoCount(campaign.id), // Use actual photo count
+                              builder: (context, snapshot) {
+                                final photoCount = snapshot.data ?? campaign.photoIds.length;
+                                return Text('$photoCount photos');
+                              },
+                            ),
                             trailing: const Icon(Icons.arrow_forward_ios),
                             onTap: () {
                               Navigator.push(

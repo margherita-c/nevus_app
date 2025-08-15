@@ -89,6 +89,11 @@ class _CampaignsScreenState extends State<CampaignsScreen> {
     );
   }
 
+  Future<int> _getActualPhotoCount(String campaignId) async {
+    final allPhotos = await UserStorage.loadPhotos();
+    return allPhotos.where((photo) => photo.campaignId == campaignId).length;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,18 +146,30 @@ class _CampaignsScreenState extends State<CampaignsScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Text(
-                        '${campaign.photoIds.length}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
+                    leading: FutureBuilder<int>(
+                      future: _getActualPhotoCount(campaign.id),
+                      builder: (context, snapshot) {
+                        final photoCount = snapshot.data ?? campaign.photoIds.length;
+                        return CircleAvatar(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          child: Text(
+                            '$photoCount',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        );
+                      },
                     ),
                     title: Text('Campaign ${campaign.date.day}/${campaign.date.month}/${campaign.date.year}'),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${campaign.photoIds.length} photos'),
+                        FutureBuilder<int>(
+                          future: _getActualPhotoCount(campaign.id),
+                          builder: (context, snapshot) {
+                            final photoCount = snapshot.data ?? campaign.photoIds.length;
+                            return Text('$photoCount photos');
+                          },
+                        ),
                         Text(
                           'Created: ${campaign.date.hour}:${campaign.date.minute.toString().padLeft(2, '0')}',
                           style: const TextStyle(fontSize: 12, color: Colors.grey),

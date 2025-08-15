@@ -6,6 +6,7 @@ import 'dart:developer' as developer;
 import 'photo_gallery_screen.dart';
 import '../models/photo.dart';
 import '../storage/user_storage.dart'; // Changed from photo_storage
+import '../storage/campaign_storage.dart'; // Import CampaignStorage
 
 class CameraScreen extends StatefulWidget {
   final String? campaignId; // Add campaign support
@@ -73,10 +74,16 @@ class CameraScreenState extends State<CameraScreen> {
         campaignId: widget.campaignId ?? 'default_campaign',
       );
 
-      // Load, add, and save using UserStorage
+      // Load, add, and save photo using UserStorage
       List<Photo> photos = await UserStorage.loadPhotos();
       photos.add(newPhoto);
       await UserStorage.savePhotos(photos);
+
+      // *** ADD THIS: Update campaign photoIds ***
+      if (widget.campaignId != null) {
+        await _updateCampaignPhotoIds(widget.campaignId!, newPhoto.id);
+      }
+
       developer.log('Photo saved successfully', name: 'CameraScreen');
 
       if (mounted) {
@@ -104,6 +111,18 @@ class CameraScreenState extends State<CameraScreen> {
           const SnackBar(content: Text('Error taking picture'))
         );
       }
+    }
+  }
+
+  Future<void> _updateCampaignPhotoIds(String campaignId, String photoId) async {
+    final campaigns = await CampaignStorage.loadCampaigns();
+    final campaignIndex = campaigns.indexWhere((c) => c.id == campaignId);
+    
+    if (campaignIndex != -1) {
+      // Add the photo ID to the campaign's photoIds list
+      campaigns[campaignIndex].photoIds.add(photoId);
+      await CampaignStorage.saveCampaigns(campaigns);
+      developer.log('Updated campaign $campaignId with photo $photoId', name: 'CameraScreen');
     }
   }
 
