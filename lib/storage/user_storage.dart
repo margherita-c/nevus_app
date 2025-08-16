@@ -140,4 +140,65 @@ class UserStorage {
     final jsonData = moles.map((mole) => mole.toJson()).toList();
     await file.writeAsString(json.encode(jsonData));
   }
+
+  // Load current user by username
+  static Future<User?> loadCurrentUser(String username) async {
+    try {
+      final userDir = await getUserDirectory(User(username: username));
+      final file = File('$userDir/user.json');
+      if (!await file.exists()) return null;
+      
+      final contents = await file.readAsString();
+      final jsonData = json.decode(contents);
+      return User.fromJson(jsonData);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Create a new user
+  static Future<void> createUser(User user) async {
+    await ensureUserDirectoryExists(user);
+    final file = File('${await getUserDirectory(user)}/user.json');
+    await file.writeAsString(json.encode(user.toJson()));
+  }
+  
+  // Update an existing user
+  static Future<void> updateUser(User user) async {
+    await ensureUserDirectoryExists(user);
+    final file = File('${await getUserDirectory(user)}/user.json');
+    await file.writeAsString(json.encode(user.toJson()));
+    
+    // Update the current user in memory if it's the same user
+    if (currentUser.username == user.username) {
+      setCurrentUser(user);
+    }
+  }
+  
+  static Future<void> saveCurrentUser() async {
+    try {
+      final userDir = await getUserDirectory();
+      final userFile = File('$userDir/user.json');
+      
+      // Use the current user data that's already in memory
+      await userFile.writeAsString(json.encode(currentUser.toJson()));
+    } catch (e) {
+      throw Exception('Failed to save current user: $e');
+    }
+  }
+  
+  /* static Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final userDir = await getUserDirectory();
+      final userFile = File('$userDir/current_user.json');
+      
+      if (await userFile.exists()) {
+        final contents = await userFile.readAsString();
+        return jsonDecode(contents);
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Failed to load current user: $e');
+    }
+  } */
 }

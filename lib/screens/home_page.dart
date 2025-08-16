@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'campaign_detail_screen.dart';
 import 'photo_gallery_screen.dart';
 import 'auth_screen.dart';
 import 'campaigns_screen.dart';
-import 'campaign_detail_screen.dart';
+import 'edit_account_screen.dart'; // Add this import
 import '../storage/user_storage.dart';
 import '../storage/campaign_storage.dart';
 import '../models/campaign.dart';
 import '../models/user.dart';
-import '../services/campaign_service.dart'; // Add this import
-import '../widgets/app_bar_title.dart'; // Add this import
+import '../services/campaign_service.dart';
+import '../widgets/app_bar_title.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -41,6 +42,15 @@ class _HomePageState extends State<HomePage> {
     if (newCampaign != null) {
       await _loadCampaigns();
     }
+  }
+
+  Future<void> _editAccount() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const EditAccountScreen()),
+    );
+    // Refresh the page in case user data was updated
+    setState(() {});
   }
 
   Future<void> _logout() async {
@@ -77,16 +87,30 @@ class _HomePageState extends State<HomePage> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const AppBarTitle(title: 'Nevus App'), // Updated to use widget
+        title: const AppBarTitle(title: 'Nevus App'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           PopupMenuButton(
             onSelected: (value) {
               if (value == 'logout') {
                 _logout();
+              } else if (value == 'edit_account') {
+                _editAccount();
               }
             },
             itemBuilder: (context) => [
+              // Only show edit account for non-guest users
+              if (!currentUser.isGuest)
+                const PopupMenuItem(
+                  value: 'edit_account',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 20),
+                      SizedBox(width: 8),
+                      Text('Edit Account'),
+                    ],
+                  ),
+                ),
               PopupMenuItem(
                 value: 'logout',
                 child: Row(
@@ -116,7 +140,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome, ${currentUser.isGuest ? 'Guest' : currentUser.username}!',
+                      'Welcome, ${currentUser.displayName}!',
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -218,7 +242,7 @@ class _HomePageState extends State<HomePage> {
                             leading: const Icon(Icons.folder),
                             title: Text('Campaign ${campaign.date.day}/${campaign.date.month}/${campaign.date.year}'),
                             subtitle: FutureBuilder<int>(
-                              future: CampaignService.getActualPhotoCount(campaign.id), // Updated to use service
+                              future: CampaignService.getActualPhotoCount(campaign.id),
                               builder: (context, snapshot) {
                                 final photoCount = snapshot.data ?? campaign.photoIds.length;
                                 return Text('$photoCount photos');
