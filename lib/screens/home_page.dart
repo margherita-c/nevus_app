@@ -4,6 +4,7 @@ import 'photo_gallery_screen.dart';
 import 'auth_screen.dart';
 import 'campaigns_screen.dart';
 import 'edit_account_screen.dart'; // Add this import
+import 'mole_list_screen.dart';
 import '../storage/user_storage.dart';
 import '../storage/campaign_storage.dart';
 import '../models/campaign.dart';
@@ -178,6 +179,22 @@ class _HomePageState extends State<HomePage> {
                     },
                     icon: const Icon(Icons.photo_library),
                     label: const Text('All Photos'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MoleListScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.person_pin_circle),
+                    label: const Text('Moles'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                     ),

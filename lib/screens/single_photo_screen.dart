@@ -21,12 +21,12 @@ class SinglePhotoScreen extends StatefulWidget {
   });
 
   @override
-  _SinglePhotoScreenState createState() => _SinglePhotoScreenState();
+  SinglePhotoScreenState createState() => SinglePhotoScreenState();
 }
 
 enum MarkAction { none, add, drag }
 
-class _SinglePhotoScreenState extends State<SinglePhotoScreen> {
+class SinglePhotoScreenState extends State<SinglePhotoScreen> {
   bool markMode = false;
   int? selectedSpotIndex;
   MarkAction markAction = MarkAction.none;
