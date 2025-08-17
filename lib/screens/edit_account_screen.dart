@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../storage/user_storage.dart';
 import '../widgets/app_bar_title.dart';
+import 'fitzpatrick_info_screen.dart'; // Add this import
 
 class EditAccountScreen extends StatefulWidget {
   const EditAccountScreen({super.key});
@@ -15,10 +16,19 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
   
   DateTime? _selectedDateOfBirth;
   String? _selectedGender;
+  int? _selectedSkinType;
   bool _isLoading = false;
   bool _hasChanges = false;
 
   final List<String> _genderOptions = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+  final List<Map<String, dynamic>> _skinTypeOptions = [
+    {'value': 1, 'label': 'Type I - Very fair, always burns'},
+    {'value': 2, 'label': 'Type II - Fair, usually burns'},
+    {'value': 3, 'label': 'Type III - Medium, sometimes burns'},
+    {'value': 4, 'label': 'Type IV - Olive, rarely burns'},
+    {'value': 5, 'label': 'Type V - Brown, very rarely burns'},
+    {'value': 6, 'label': 'Type VI - Dark brown/black, never burns'},
+  ];
 
   @override
   void initState() {
@@ -31,6 +41,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     _fullNameController.text = currentUser.fullName ?? '';
     _selectedDateOfBirth = currentUser.dateOfBirth;
     _selectedGender = currentUser.gender;
+    _selectedSkinType = currentUser.skinType;
   }
 
   @override
@@ -61,6 +72,13 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     }
   }
 
+  void _showFitzpatrickInfo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FitzpatrickInfoScreen()),
+    );
+  }
+
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate() || !_hasChanges) return;
 
@@ -72,12 +90,13 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         fullName: _fullNameController.text.trim().isEmpty ? null : _fullNameController.text.trim(),
         dateOfBirth: _selectedDateOfBirth,
         gender: _selectedGender,
+        skinType: _selectedSkinType,
       );
 
       // Update the user in memory first
       UserStorage.setCurrentUser(updatedUser);
       
-      // Then save to file (no parameters needed)
+      // Then save to file
       await UserStorage.saveCurrentUser();
 
       setState(() {
@@ -210,6 +229,48 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
                           _onFieldChanged();
                         },
                       ),
+                      const SizedBox(height: 16),
+
+                      // Skin Type with Info Button
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<int>(
+                              value: _selectedSkinType,
+                              decoration: const InputDecoration(
+                                labelText: 'Skin Type (Fitzpatrick Scale)',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.palette),
+                              ),
+                              isExpanded: true, // Add this to prevent overflow
+                              items: _skinTypeOptions.map<DropdownMenuItem<int>>((skinType) {
+                                return DropdownMenuItem<int>(
+                                  value: skinType['value'] as int,
+                                  child: Text(
+                                    skinType['label'] as String,
+                                    overflow: TextOverflow.ellipsis, // Add this to handle long text
+                                    maxLines: 1, // Ensure single line
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedSkinType = value);
+                                _onFieldChanged();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: _showFitzpatrickInfo,
+                            icon: const Icon(Icons.info_outline),
+                            tooltip: 'Learn about Fitzpatrick Scale',
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.blue.shade50,
+                              foregroundColor: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -256,6 +317,17 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
                           Text('Display Name: ${currentUser.displayName}'),
                         ],
                       ),
+                      
+                      if (currentUser.skinType != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.palette, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('Skin Type: ${currentUser.skinTypeDescription}')),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
