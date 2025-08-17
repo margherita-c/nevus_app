@@ -78,6 +78,7 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
                 controller: nameController,
                 decoration: const InputDecoration(
                   labelText: 'Mole Name',
+                  hintText: 'e.g., Left shoulder mole, Back center mole',
                   border: OutlineInputBorder(),
                 ),
                 autofocus: true,
@@ -87,6 +88,7 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
                 controller: descriptionController,
                 decoration: const InputDecoration(
                   labelText: 'Description',
+                  hintText: 'Describe the mole characteristics',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 4,
@@ -113,29 +115,39 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
     );
 
     if (result != null) {
-      // Update the mole
-      final updatedMole = Mole(
-        id: _currentMole.id,
-        name: result['name']!.isNotEmpty ? result['name']! : _currentMole.name,
-        description: result['description']!,
-      );
+      try {
+        // Update the mole with lastModified timestamp
+        final updatedMole = _currentMole.copyWith(
+          name: result['name']!.isNotEmpty ? result['name']! : _currentMole.name,
+          description: result['description']!,
+        );
 
-      // Save to storage
-      final allMoles = await UserStorage.loadMoles();
-      final moleIndex = allMoles.indexWhere((m) => m.id == _currentMole.id);
-      if (moleIndex != -1) {
-        allMoles[moleIndex] = updatedMole;
-        await UserStorage.saveMoles(allMoles);
-        
-        setState(() {
-          _currentMole = updatedMole;
-        });
+        // Load all moles, update this one, and save back to user's storage
+        final allMoles = await UserStorage.loadMoles();
+        final moleIndex = allMoles.indexWhere((m) => m.id == _currentMole.id);
+        if (moleIndex != -1) {
+          allMoles[moleIndex] = updatedMole;
+          await UserStorage.saveMoles(allMoles);
+          
+          setState(() {
+            _currentMole = updatedMole;
+          });
 
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Mole information updated and saved!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Mole information updated!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: Text('Error saving mole: $e'),
+              backgroundColor: Colors.red,
             ),
           );
         }

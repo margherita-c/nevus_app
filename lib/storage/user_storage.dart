@@ -124,21 +124,28 @@ class UserStorage {
     try {
       await ensureUserDirectoryExists(user);
       final file = await _molesJsonFile(user);
-      if (!await file.exists()) return [];
-      
+    
+      if (!await file.exists()) {
+        return [];
+      }
+    
       final contents = await file.readAsString();
       final List<dynamic> jsonData = json.decode(contents);
       return jsonData.map((json) => Mole.fromJson(json)).toList();
     } catch (e) {
-      return [];
+      throw Exception('Failed to load moles: $e');
     }
   }
 
   static Future<void> saveMoles(List<Mole> moles, [User? user]) async {
-    await ensureUserDirectoryExists(user);
-    final file = await _molesJsonFile(user);
-    final jsonData = moles.map((mole) => mole.toJson()).toList();
-    await file.writeAsString(json.encode(jsonData));
+    try {
+      await ensureUserDirectoryExists(user);
+      final file = await _molesJsonFile(user);
+      final jsonData = moles.map((mole) => mole.toJson()).toList();
+      await file.writeAsString(json.encode(jsonData));
+    } catch (e) {
+      throw Exception('Failed to save moles: $e');
+    }
   }
 
   // Load current user by username
