@@ -35,6 +35,7 @@ Campaigns are linked to a date and represent the group of photos taken in a spec
 ### Mole
 Every mole has an unique Id, a short string that describes it, a long description and 
 an automatic method that retrieves all the photos where it appears.
+### User
 
 ## Screens
 ### auth_screen
@@ -42,16 +43,16 @@ From here you can access the app: there is a box where you need to insert your u
 #### add or edit an account
 Here you can create your first account or add a new one, but also modify an already existing account; as a matter of fact the app lets you handle multiple accounts on the same device. Also all the data given to Nevus is strictly kept inside the app, avoiding that your private information might get released to public platforms. You can acces this page from the "plus" button in the log in screen, or from the menu, clicking "edit account". In this page you'll find a box that asks for some personal information, such as gender, age etc, but also for an username and password; at he end of the page there's a save/create button, depending on whether you are adding or modifying an acount.
 ### home
-Here you see an image of a human figure, where in future you'll be able to place the pictures of your moles, in this way every user will be able to create an accessible map of their moles, that will surely help with the tracking. Additionaly in the homepage there are two buttons: one to access the camera and one to access the gallery, where all the photos are stored.
-#### campaigns
-In the homepage you can see the list of all the previous campaigns, here you can also create or import a new campaign by taking new pictures directly wih the app camera or by immporting old pictures from your phone.
+Here you see an image of a human figure, where in future you'll be able to place the pictures of your moles, in this way every user will be able to create an accessible map of their moles, that will surely help with the tracking. Additionaly in the homepage there are two buttons: one to access the camera and one to access the gallery, where all the photos are stored. Here you can also find the more recent campaigns that have been created, to see all the campaigns there's a specific button; with another button you can go to the mole list.
+### campaign list
+Here you have a list of all the campaigns that have ever been created by a user
 ### camera
 On this page you can take pictures that will show up on the gallery; once you shoot a photo a message will appear saying: "Picture saved!", along with a button that will transefer you on the gallery screen. If an image can't be taken another message will apper saying: "Error taking picture".
-### campaign
+### campaign detail
 Here you will find all the images tha where taken, unless they where deleted; you can click on the photos to see some info, like when the picture was taken and the name of the picture. By default the images' names are all blank, but you can modify them by clicking on a button called: "Edit name".
 #### single photo
 here you can see soe informatione about a singular photo, like the date when the picture was taken or all the annotations. On this page you can add and edit the spots that highlight the moles.
-### mole gallery
+### mole list
 Qui ci sono tutti i nei, eventualmnte ci sarà un'immagine rappresenttiva e poche informazioni caratteristiche usate per distinguere un neo dall'altro.
-### mole info
+### mole detail
 Qui c'è un focus su un singolo neo: in questa pagina si trovano tutte le informazioni e annotazioni riguardanti un solo neo.
