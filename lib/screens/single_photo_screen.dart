@@ -63,7 +63,7 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
   }
 
   void _handleAddSpot(Offset position) async {
-    final String? moleId = await DialogUtils.showMoleIdDialog(context: context);
+    final String? moleId = await DialogUtils.showMoleSelectionDialog(context: context);
     
     if (moleId != null && moleId.isNotEmpty) {
       setState(() {
@@ -77,6 +77,12 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
       });
       
       await _savePhotoChanges();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Spot added successfully!')),
+        );
+      }
     } else {
       setState(() {
         markAction = MarkAction.none;

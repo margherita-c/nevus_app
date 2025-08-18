@@ -155,6 +155,11 @@ class PhotoInfoPanel extends StatelessWidget {
     
     if (newMoleId != null && newMoleId.isNotEmpty && newMoleId != currentMoleId) {
       onEditSpotMoleId(index, newMoleId);
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mole assignment updated!')),
+      );
     }
   }
 

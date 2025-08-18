@@ -25,7 +25,7 @@ class SpotWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Spot circle
+          // Spot circle - now clean without any number
           GestureDetector(
             onTap: isMarkMode ? onTap : null,
             child: Container(
@@ -38,24 +38,6 @@ class SpotWidget extends StatelessWidget {
                   width: isSelected ? 4 : 2,
                 ),
                 color: Colors.red.withValues(alpha: 0.3),
-              ),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${spot.hashCode.abs() % 100}', // Show a number instead
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.blue : Colors.red,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
               ),
             ),
           ),
