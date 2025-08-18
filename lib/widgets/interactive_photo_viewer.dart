@@ -83,6 +83,9 @@ class InteractivePhotoViewer extends StatelessWidget {
               onPanUpdate: markAction == MarkAction.drag && selectedSpotIndex != null
                 ? (details) => _handleDragSpot(details)
                 : null,
+              // Add this line to allow zoom gestures to pass through:
+              onScaleStart: markAction == MarkAction.none ? (_) {} : null,
+              onScaleUpdate: markAction == MarkAction.none ? (_) {} : null,
             ),
           ),
       ],

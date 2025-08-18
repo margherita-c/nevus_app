@@ -186,53 +186,77 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Photo viewer section
-            SizedBox(
-              width: double.infinity,
-              height: MediaQuery.of(context).size.height * (2 / 3),
-              child: InteractivePhotoViewer(
-                photo: widget.photo,
-                isMarkMode: markMode,
-                markAction: markAction,
-                selectedSpotIndex: selectedSpotIndex,
-                transformationController: _transformationController,
-                onAddSpot: _handleAddSpot,
-                onDragSpot: _handleDragSpot,
-                onSelectSpot: (index) => setState(() {
-                  selectedSpotIndex = index;
-                  markAction = MarkAction.none;
-                }),
-                onEditSpot: _handleQuickEditSpot, // Add quick edit callback
-              ),
+      body: Stack(
+        children: [
+          // Full-screen photo viewer (background)
+          Positioned.fill(
+            child: InteractivePhotoViewer(
+              photo: widget.photo,
+              isMarkMode: markMode,
+              markAction: markAction,
+              selectedSpotIndex: selectedSpotIndex,
+              transformationController: _transformationController,
+              onAddSpot: _handleAddSpot,
+              onDragSpot: _handleDragSpot,
+              onSelectSpot: (index) => setState(() {
+                selectedSpotIndex = index;
+                markAction = MarkAction.none;
+              }),
+              onEditSpot: _handleQuickEditSpot,
             ),
-            
-            // Mark mode controls
-            if (markMode)
-              MarkModeControls(
+          ),
+          
+          // Mark mode controls (overlay)
+          if (markMode)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: MarkModeControls(
                 currentAction: markAction,
                 hasSelectedSpot: selectedSpotIndex != null,
                 onActionChanged: (action) => setState(() => markAction = action),
                 onDeleteSpot: _handleDeleteSpot,
               ),
-
-            // Photo information panel
-            PhotoInfoPanel(
-              photo: widget.photo,
-              spots: widget.photo.spots,
-              selectedSpotIndex: selectedSpotIndex,
-              isMarkMode: markMode,
-              onEditDescription: _handleEditDescription,
-              onEditSpotMoleId: _handleEditSpotMoleId,
-              onSelectSpot: (index) => setState(() {
-                selectedSpotIndex = index;
-                markAction = MarkAction.none;
-              }),
             ),
-          ],
-        ),
+
+          // Scrollable info panel (overlay from bottom)
+          DraggableScrollableSheet(
+            initialChildSize: 0.3, // Start at 30% of screen height
+            minChildSize: 0.1,     // Can collapse to 10%
+            maxChildSize: 0.8,     // Can expand to 80%
+            builder: (context, scrollController) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: PhotoInfoPanel(
+                    photo: widget.photo,
+                    spots: widget.photo.spots,
+                    selectedSpotIndex: selectedSpotIndex,
+                    isMarkMode: markMode,
+                    onEditDescription: _handleEditDescription,
+                    onEditSpotMoleId: _handleEditSpotMoleId,
+                    onSelectSpot: (index) => setState(() {
+                      selectedSpotIndex = index;
+                      markAction = MarkAction.none;
+                    }),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
