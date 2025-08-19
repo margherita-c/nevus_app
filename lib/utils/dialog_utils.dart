@@ -367,8 +367,6 @@ class DialogUtils {
 
   /// Shows dialog to create a new mole
   static Future<String?> _showCreateMoleDialog(BuildContext context) async {
-    String? moleName;
-    String? moleDescription;
     
     final result = await showDialog<Map<String, String>>(
       context: context,

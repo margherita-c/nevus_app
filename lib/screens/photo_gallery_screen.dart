@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'camera_screen.dart';
 import '../models/photo.dart';
+import '../models/mole.dart';
 import '../storage/user_storage.dart';
 import 'single_photo_screen.dart';
 import '../widgets/app_bar_title.dart'; // Add this import
@@ -15,6 +16,7 @@ class PhotoGalleryScreen extends StatefulWidget {
 
 class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   List<Photo> _imageFiles = [];
+  List<Mole> _moles = [];
   bool _isLoading = true;
 
   @override
@@ -26,8 +28,10 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
   Future<void> _loadImages() async {
     setState(() => _isLoading = true);
     final photos = await UserStorage.loadPhotos();
+    final allMoles = await UserStorage.loadMoles();
     setState(() {
       _imageFiles = photos;
+      _moles = allMoles;
       _isLoading = false;
     });
   }
@@ -115,6 +119,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                           MaterialPageRoute(
                             builder: (_) => SinglePhotoScreen(
                               photo: photo,
+                              moles: _moles,
                               index: index,
                               onEditDescription: _editPhotoDescription,
                               onDelete: (i) async => await _deleteImage(i),

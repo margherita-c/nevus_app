@@ -16,6 +16,16 @@ class Mole {
   }) : createdDate = createdDate ?? DateTime.now(),
        lastModified = lastModified ?? DateTime.now();
 
+       // Creates a default mole for cases where no mole is found
+  factory Mole.defaultMole() => Mole(
+        id: 'unknown_mole',
+        name: 'Unknown Mole',
+        description: 'This spot is not associated with a tracked mole',
+        createdDate: DateTime.now(),
+        lastModified: DateTime.now(),
+        metadata: {'isDefault': true},
+      ); 
+
   /// Converts this mole to a JSON map for storage.
   Map<String, dynamic> toJson() => {
         'id': id,

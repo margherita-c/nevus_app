@@ -17,6 +17,7 @@ class MoleDetailScreen extends StatefulWidget {
 
 class _MoleDetailScreenState extends State<MoleDetailScreen> {
   List<Photo> _molePhotos = [];
+  List<Mole> _moles = [];
   bool _isLoading = true;
   late Mole _currentMole;
 
@@ -24,6 +25,7 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
   void initState() {
     super.initState();
     _currentMole = widget.mole;
+    
     _loadMolePhotos();
   }
 
@@ -230,6 +232,7 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
           MaterialPageRoute(
             builder: (context) => SinglePhotoScreen(
               photo: photo,
+              moles: _moles,
               index: index,
               onEditDescription: (_, _) {}, // Not used in this context
               onDelete: (_) {}, // Not used in this context

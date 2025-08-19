@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/photo.dart';
 import '../models/spot.dart';
+import '../models/mole.dart';
 import '../storage/user_storage.dart';
 import '../widgets/interactive_photo_viewer.dart';
 import '../widgets/mark_mode_controls.dart';
@@ -9,6 +10,7 @@ import '../utils/dialog_utils.dart';
 
 class SinglePhotoScreen extends StatefulWidget {
   final Photo photo;
+  final List<Mole> moles;
   final int index;
   final void Function(int, String) onEditDescription;
   final void Function(int) onDelete;
@@ -16,6 +18,7 @@ class SinglePhotoScreen extends StatefulWidget {
   const SinglePhotoScreen({
     super.key,
     required this.photo,
+    required this.moles,
     required this.index,
     required this.onEditDescription,
     required this.onDelete,
@@ -192,6 +195,7 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
           Positioned.fill(
             child: InteractivePhotoViewer(
               photo: widget.photo,
+              moles: widget.moles,
               isMarkMode: markMode,
               markAction: markAction,
               selectedSpotIndex: selectedSpotIndex,

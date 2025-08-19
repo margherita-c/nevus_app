@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import '../models/photo.dart';
+import '../models/mole.dart';
 import 'spot_widget.dart';
 import 'mark_mode_controls.dart';
 
 class InteractivePhotoViewer extends StatelessWidget {
   final Photo photo;
+  final List<Mole> moles;
   final bool isMarkMode;
   final MarkAction markAction;
   final int? selectedSpotIndex;
@@ -19,6 +21,7 @@ class InteractivePhotoViewer extends StatelessWidget {
   const InteractivePhotoViewer({
     super.key,
     required this.photo,
+    required this.moles,
     required this.isMarkMode,
     required this.markAction,
     this.selectedSpotIndex,
@@ -60,8 +63,17 @@ class InteractivePhotoViewer extends StatelessWidget {
                 ...photo.spots.asMap().entries.map((entry) {
                   final index = entry.key;
                   final spot = entry.value;
+                  // Build a map from the list of moles that lets me retrieve the mole by its ID
+                  final moleMap = Map<String, Mole>.fromIterable(
+                    moles,
+                    key: (mole) => mole.id,
+                    value: (mole) => mole,
+                  );
+                  final currentMole = moleMap[spot.moleId] ?? Mole.defaultMole();
+                  
                   return SpotWidget(
                     spot: spot,
+                    mole: currentMole,
                     isSelected: selectedSpotIndex == index,
                     isMarkMode: isMarkMode,
                     onTap: () => onSelectSpot(index),

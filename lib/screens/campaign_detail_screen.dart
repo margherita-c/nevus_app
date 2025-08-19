@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import '../models/campaign.dart';
 import '../models/photo.dart';
+import '../models/mole.dart';
 import '../storage/user_storage.dart';
 import '../storage/campaign_storage.dart';
 import 'camera_screen.dart';
@@ -21,6 +22,7 @@ class CampaignDetailScreen extends StatefulWidget {
 
 class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
   List<Photo> _campaignPhotos = [];
+  List<Mole> _moles = [];
   bool _isLoading = true;
   final ImagePicker _picker = ImagePicker();
 
@@ -36,9 +38,11 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     // Load all photos and filter by campaign ID
     final allPhotos = await UserStorage.loadPhotos();
     final campaignPhotos = allPhotos.where((photo) => photo.campaignId == widget.campaign.id).toList();
-    
+    final allMoles = await UserStorage.loadMoles();
+
     setState(() {
       _campaignPhotos = campaignPhotos;
+      _moles = allMoles;
       _isLoading = false;
     });
   }
@@ -415,6 +419,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                             MaterialPageRoute(
                               builder: (_) => SinglePhotoScreen(
                                 photo: photo,
+                                moles: _moles,
                                 index: index,
                                 onEditDescription: _editPhotoDescription,
                                 onDelete: _deletePhoto,

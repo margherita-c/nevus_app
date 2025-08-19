@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:nevus_app/models/mole.dart';
 import '../models/spot.dart';
 
 class SpotWidget extends StatelessWidget {
   final Spot spot;
+  final Mole mole;
   final bool isSelected;
   final bool isMarkMode;
   final VoidCallback? onTap;
@@ -11,6 +13,7 @@ class SpotWidget extends StatelessWidget {
   const SpotWidget({
     super.key,
     required this.spot,
+    required this.mole,
     required this.isSelected,
     required this.isMarkMode,
     this.onTap,
@@ -37,7 +40,7 @@ class SpotWidget extends StatelessWidget {
                   color: isSelected ? Colors.blue : Colors.red,
                   width: isSelected ? 4 : 2,
                 ),
-                color: Colors.red.withValues(alpha: 0.3),
+                color: Colors.red.withValues(alpha: 0.0),
               ),
             ),
           ),
@@ -55,9 +58,9 @@ class SpotWidget extends StatelessWidget {
               children: [
                 // Mole name
                 Text(
-                  spot.moleId.length > 12 
-                      ? '${spot.moleId.substring(0, 12)}...'
-                      : spot.moleId,
+                  mole.name.length > 12 
+                      ? '${mole.name.substring(0, 12)}...'
+                      : mole.name,
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
