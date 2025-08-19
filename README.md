@@ -4,3 +4,4 @@ Nevus' purpose is to help people track the status of their moles. It allows to t
 
 ## for more info
 [Doc](https://github.com/margherita-c/nevus_app/tree/main/doc)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/margherita-c/nevus_app)
