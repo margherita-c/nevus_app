@@ -47,7 +47,7 @@ class SpotWidget extends StatelessWidget {
           // Mole name and edit button below the spot
           const SizedBox(height: 4),
           Container(
-            constraints: const BoxConstraints(maxWidth: 100),
+            constraints: const BoxConstraints(maxWidth: 150),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.7),
@@ -58,8 +58,8 @@ class SpotWidget extends StatelessWidget {
               children: [
                 // Mole name
                 Text(
-                  mole.name.length > 12 
-                      ? '${mole.name.substring(0, 12)}...'
+                  mole.name.length > 32
+                      ? '${mole.name.substring(0, 32)}...'
                       : mole.name,
                   style: const TextStyle(
                     fontSize: 10,

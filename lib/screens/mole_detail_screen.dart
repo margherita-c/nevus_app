@@ -44,8 +44,11 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
       // Sort by date taken (newest first)
       molePhotos.sort((a, b) => b.dateTaken.compareTo(a.dateTaken));
 
+      final allMoles = await UserStorage.loadMoles();
+
       setState(() {
         _molePhotos = molePhotos;
+        _moles = allMoles;
         _isLoading = false;
       });
     } catch (e) {
