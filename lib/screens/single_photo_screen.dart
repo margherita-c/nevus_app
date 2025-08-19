@@ -66,14 +66,30 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
   }
 
   void _handleAddSpot(Offset position) async {
-    final String? moleId = await DialogUtils.showMoleSelectionDialog(context: context);
+    if (!mounted) return;
+    
+    final String? result = await DialogUtils.showMoleSelectionDialog(context: context);
+    
+    if (!mounted) return;
+    
+    String? moleId;
+    
+    if (result == 'CREATE_NEW_MOLE') {
+      // Handle create new mole
+      moleId = await DialogUtils.showCreateMoleDialog(context);
+    } else {
+      // Use existing mole ID
+      moleId = result;
+    }
+    
+    if (!mounted) return;
     
     if (moleId != null && moleId.isNotEmpty) {
       setState(() {
         widget.photo.spots.add(Spot(
           position: position, 
           radius: 30, 
-          moleId: moleId
+          moleId: moleId!
         ));
         selectedSpotIndex = widget.photo.spots.length - 1;
         markAction = MarkAction.none;
@@ -158,7 +174,7 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
   Future<void> _deletePhoto() async {
     final confirm = await DialogUtils.showDeletePhotoDialog(context: context);
     
-    if (confirm == true) {
+    if (mounted && confirm == true) {
       widget.onDelete(widget.index);
       Navigator.pop(context);
     }
@@ -246,6 +262,11 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
                   controller: scrollController,
                   child: PhotoInfoPanel(
                     photo: widget.photo,
+                    onSafeContextOperation: (VoidCallback operation) {
+                      if (mounted) {
+                        operation();
+                      }
+                    },
                     spots: widget.photo.spots,
                     selectedSpotIndex: selectedSpotIndex,
                     isMarkMode: markMode,

@@ -11,6 +11,7 @@ class PhotoInfoPanel extends StatelessWidget {
   final Function(String) onEditDescription;
   final Function(int, String) onEditSpotMoleId;
   final Function(int) onSelectSpot;
+  final Function(VoidCallback) onSafeContextOperation;
 
   const PhotoInfoPanel({
     super.key,
@@ -21,6 +22,7 @@ class PhotoInfoPanel extends StatelessWidget {
     required this.onEditDescription,
     required this.onEditSpotMoleId,
     required this.onSelectSpot,
+    required this.onSafeContextOperation,
   });
 
   @override
@@ -157,9 +159,17 @@ class PhotoInfoPanel extends StatelessWidget {
       onEditSpotMoleId(index, newMoleId);
       
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
+      onSafeContextOperation(() {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mole ID updated!')),
+        );
+      });
+      onSafeContextOperation((){
+        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Mole assignment updated!')),
       );
+      });
+      
     }
   }
 

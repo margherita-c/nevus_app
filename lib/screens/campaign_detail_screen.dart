@@ -105,7 +105,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
             break;
           }
           // Show loading dialog again if more photos to process
-          if (i < images.length - 1) {
+          if (mounted && i < images.length - 1) {
             showDialog(
               context: context,
               barrierDismissible: false,

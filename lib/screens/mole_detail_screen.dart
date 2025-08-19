@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:speech_recognition/speech_recognition.dart';
+
 import '../models/mole.dart';
 import '../models/photo.dart';
 import '../storage/user_storage.dart';

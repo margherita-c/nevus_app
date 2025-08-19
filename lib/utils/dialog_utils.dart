@@ -218,12 +218,9 @@ class DialogUtils {
                   const Text('Or create a new mole:'),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(context); // Close this dialog
-                      final newMoleId = await _showCreateMoleDialog(context);
-                      if (newMoleId != null) {
-                        Navigator.pop(context, newMoleId); // Return the new mole ID
-                      }
+                    onPressed: () {
+                      // Simply return a special value to indicate "create new"
+                      Navigator.pop(context, 'CREATE_NEW_MOLE');
                     },
                     icon: const Icon(Icons.add),
                     label: const Text('Create New Mole'),
@@ -339,7 +336,7 @@ class DialogUtils {
                   ElevatedButton.icon(
                     onPressed: () async {
                       Navigator.pop(context); // Close this dialog
-                      final newMoleId = await _showCreateMoleDialog(context);
+                      final newMoleId = await showCreateMoleDialog(context);
                       if (newMoleId != null) {
                         Navigator.pop(context, newMoleId); // Return the new mole ID
                       }
@@ -366,7 +363,7 @@ class DialogUtils {
   }
 
   /// Shows dialog to create a new mole
-  static Future<String?> _showCreateMoleDialog(BuildContext context) async {
+  static Future<String?> showCreateMoleDialog(BuildContext context) async {
     
     final result = await showDialog<Map<String, String>>(
       context: context,
