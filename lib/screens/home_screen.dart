@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../services/export_service.dart';
 import 'campaign_detail_screen.dart';
 import 'photo_gallery_screen.dart';
 import 'auth_screen.dart';
 import 'campaigns_screen.dart';
-import 'edit_account_screen.dart'; // Add this import
+import 'edit_account_screen.dart';
 import 'mole_list_screen.dart';
 import '../storage/user_storage.dart';
 import '../storage/campaign_storage.dart';
@@ -12,16 +13,17 @@ import '../models/user.dart';
 import '../services/campaign_service.dart';
 import '../widgets/app_bar_title.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomeScreenState extends State<HomeScreen> {
   List<Campaign> _campaigns = [];
   bool _isLoading = false;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -52,6 +54,41 @@ class _HomePageState extends State<HomePage> {
     );
     // Refresh the page in case user data was updated
     setState(() {});
+  }
+
+  Future<void> _exportUserData() async {
+    setState(() {
+      _isExporting = true;
+    });
+
+    try {
+      final currentUser = UserStorage.currentUser;
+      await ExportService.exportUserData(currentUser.username);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data exported successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
+      }
+    }
   }
 
   Future<void> _logout() async {
@@ -97,11 +134,13 @@ class _HomePageState extends State<HomePage> {
                 _logout();
               } else if (value == 'edit_account') {
                 _editAccount();
+              } else if (value == 'export_data') {
+                _exportUserData();
               }
             },
             itemBuilder: (context) => [
-              // Only show edit account for non-guest users
-              if (!currentUser.isGuest)
+              // Only show edit account and export for non-guest users
+              if (!currentUser.isGuest) ...[
                 const PopupMenuItem(
                   value: 'edit_account',
                   child: Row(
@@ -112,6 +151,25 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
+                PopupMenuItem(
+                  value: 'export_data',
+                  child: Row(
+                    children: [
+                      Icon(Icons.file_download, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Export Data'),
+                      if (_isExporting) ...[
+                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
               PopupMenuItem(
                 value: 'logout',
                 child: Row(

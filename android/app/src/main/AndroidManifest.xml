@@ -1,5 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<uses-permission android:name="android.permission.CAMERA" /><!-- Required for camera access, it closes o its own since there's a slash at the end of the sentence -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.nevus_app">
+    <uses-permission android:name="android.permission.CAMERA" /><!-- Required for camera access, it closes o its own since there's a slash at the end of the sentence -->
+    <!-- Add these permissions for file operations and sharing -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="nevus_app"
         android:name="${applicationName}"
