@@ -17,8 +17,8 @@ class ExportService {
       // Create archive
       final archive = Archive();
       
-      // Add all files from user directory to archive
-      await _addDirectoryToArchive(archive, userDir, 'users/$username');
+      // Add all files from user directory to archive, starting from username as root
+      await _addDirectoryToArchive(archive, userDir, username);
       
       // Encode archive to zip
       final zipData = ZipEncoder().encode(archive);
