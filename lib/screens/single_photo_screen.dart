@@ -171,7 +171,7 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
     if (!mounted) return;
     
     if (newMoleId != null && newMoleId.isNotEmpty && newMoleId != widget.photo.spots[index].moleId) {
-      await _handleEditSpotMoleId(index, newMoleId);
+      _handleEditSpotMoleId(index, newMoleId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Mole ID updated!')),
