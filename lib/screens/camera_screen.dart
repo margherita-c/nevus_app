@@ -29,14 +29,32 @@ class CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _initializeCamera() async {
-    cameras = await availableCameras();
-    _controller = CameraController(cameras![0], ResolutionPreset.high);
+    try {
+      cameras = await availableCameras();
+      if (cameras == null || cameras!.isEmpty) {
+        developer.log('No cameras available', name: 'CameraScreen');
+        return;
+      }
+      
+      _controller = CameraController(
+        cameras![0], 
+        ResolutionPreset.high,
+        enableAudio: false, // Disable audio to prevent hanging
+      );
 
-    await _controller!.initialize();
-    if (mounted) {
-      setState(() {
-        _isInitialized = true;
-      });
+      await _controller!.initialize();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      developer.log('Camera initialization error: $e', name: 'CameraScreen');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Camera error: $e')),
+        );
+      }
     }
   }
 
@@ -163,8 +181,19 @@ class CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (!_isInitialized || _controller == null || !_controller!.value.isInitialized) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Initializing camera...'),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(
