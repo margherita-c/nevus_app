@@ -76,6 +76,7 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
     
     if (result == 'CREATE_NEW_MOLE') {
       // Handle create new mole
+      if (!mounted) return;
       moleId = await DialogUtils.showCreateMoleDialog(context);
     } else {
       // Use existing mole ID
@@ -149,13 +150,28 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
 
   // Added quick edit method for spots
   void _handleQuickEditSpot(int index) async {
-    final String? newMoleId = await DialogUtils.showEditMoleIdDialog(
+    if (!mounted) return;
+    
+    final String? result = await DialogUtils.showEditMoleIdDialog(
       context: context,
       currentMoleId: widget.photo.spots[index].moleId,
     );
     
+    if (!mounted) return;
+    
+    String? newMoleId;
+    
+    if (result == 'CREATE_NEW_MOLE') {
+      if (!mounted) return;
+      newMoleId = await DialogUtils.showCreateMoleDialog(context);
+    } else {
+      newMoleId = result;
+    }
+    
+    if (!mounted) return;
+    
     if (newMoleId != null && newMoleId.isNotEmpty && newMoleId != widget.photo.spots[index].moleId) {
-      _handleEditSpotMoleId(index, newMoleId);
+      await _handleEditSpotMoleId(index, newMoleId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Mole ID updated!')),

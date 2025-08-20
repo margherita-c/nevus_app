@@ -34,8 +34,10 @@ class DialogUtils {
                     IconButton(
                       icon: const Icon(Icons.calendar_today),
                       onPressed: () async {
+                        // Store context reference before async operation
+                        final pickerContext = context;
                         final DateTime? pickedDate = await showDatePicker(
-                          context: context,
+                          context: pickerContext, // Use stored context reference
                           initialDate: selectedDate,
                           firstDate: DateTime(2020),
                           lastDate: DateTime.now().add(const Duration(days: 1)),
@@ -164,6 +166,8 @@ class DialogUtils {
     try {
       final existingMoles = await UserStorage.loadMoles();
       
+      if (!context.mounted) return null;
+      
       return showDialog<String>(
         context: context,
         builder: (context) {
@@ -238,7 +242,7 @@ class DialogUtils {
         },
       );
     } catch (e) {
-      // Fallback to simple text input if loading fails
+      if (!context.mounted) return null;
       return showTextInputDialog(
         context: context,
         title: 'Edit Mole ID',
@@ -292,6 +296,8 @@ class DialogUtils {
     try {
       final existingMoles = await UserStorage.loadMoles();
       
+      if (!context.mounted) return null;
+      
       return showDialog<String>(
         context: context,
         builder: (context) {
@@ -334,12 +340,9 @@ class DialogUtils {
                   const Text('Or create a new mole:'),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(context); // Close this dialog
-                      final newMoleId = await showCreateMoleDialog(context);
-                      if (newMoleId != null) {
-                        Navigator.pop(context, newMoleId); // Return the new mole ID
-                      }
+                    onPressed: () {
+                      // Fix: Return a special value instead of async operations
+                      Navigator.pop(context, 'CREATE_NEW_MOLE');
                     },
                     icon: const Icon(Icons.add),
                     label: const Text('Create New Mole'),
@@ -357,14 +360,13 @@ class DialogUtils {
         },
       );
     } catch (e) {
-      // Fallback to simple text input if loading fails
+      if (!context.mounted) return null;
       return showMoleIdDialog(context: context);
     }
   }
 
   /// Shows dialog to create a new mole
   static Future<String?> showCreateMoleDialog(BuildContext context) async {
-    
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) {
@@ -427,14 +429,13 @@ class DialogUtils {
           description: result['description'] ?? '',
         );
 
-        // Save to storage
+        // Save to storage - this doesn't use context, so no warning
         final allMoles = await UserStorage.loadMoles();
         allMoles.add(newMole);
         await UserStorage.saveMoles(allMoles);
 
         return newMole.id;
       } catch (e) {
-        // If saving fails, return null
         return null;
       }
     }

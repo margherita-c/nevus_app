@@ -64,11 +64,7 @@ class InteractivePhotoViewer extends StatelessWidget {
                   final index = entry.key;
                   final spot = entry.value;
                   // Build a map from the list of moles that lets me retrieve the mole by its ID
-                  final moleMap = Map<String, Mole>.fromIterable(
-                    moles,
-                    key: (mole) => mole.id,
-                    value: (mole) => mole,
-                  );
+                  final moleMap = {for (var mole in moles) mole.id: mole};
                   final currentMole = moleMap[spot.moleId] ?? Mole.defaultMole();
                   
                   return SpotWidget(
