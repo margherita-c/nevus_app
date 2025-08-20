@@ -63,20 +63,29 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _loginAsGuest() async {
     setState(() => _isLoading = true);
 
-    // Set guest user
-    UserStorage.setCurrentUser(User.guest());
-    
-    // Ensure guest directory exists
-    await UserStorage.ensureUserDirectoryExists();
+    try {
+      // Set guest user
+      UserStorage.setCurrentUser(User.guest());
+      
+      // Ensure guest directory exists
+      await UserStorage.ensureUserDirectoryExists();
 
-    setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
 
-    // Navigate to home page
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      // Navigate to home page
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 
