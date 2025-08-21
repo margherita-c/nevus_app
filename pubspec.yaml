@@ -38,6 +38,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   vector_math: ^2.1.4 # Add this line
   image_picker: ^1.0.4
+  file_picker: ^8.0.5
   archive: ^3.4.10
   share_plus: ^7.2.2
 

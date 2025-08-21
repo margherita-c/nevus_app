@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:archive/archive.dart';
 import 'home_screen.dart';
 import '../storage/user_storage.dart';
 import '../models/user.dart';
+import 'dart:convert';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -89,6 +93,77 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _importAccount(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['zip'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      final file = File(result.files.single.path!);
+      
+      setState(() => _isLoading = true);
+      
+      try {
+        // Read and extract zip file
+        final bytes = await file.readAsBytes();
+        final archive = ZipDecoder().decodeBytes(bytes);
+        
+        // Find user data file to get the actual username
+        String? actualUsername;
+        for (final file in archive) {
+          final basename = file.name.split('/').last;
+          if (file.isFile && basename == 'user.json') {
+            final userData = String.fromCharCodes(file.content as List<int>);
+            final userJson = jsonDecode(userData);
+            actualUsername = userJson['username'];
+            break;
+          }
+        }
+        
+        if (actualUsername == null) {
+          throw Exception('No user data found in archive');
+        }
+        
+        // Create new user with the actual username from the archive
+        final importedUser = User(username: actualUsername);
+        UserStorage.setCurrentUser(importedUser);
+        
+        // Extract all files to the user's directory
+        final usersDir = await UserStorage.getUsersDirectory();
+        
+        for (final file in archive) {
+          if (file.isFile) {
+            final outputFile = File('$usersDir/${file.name}');
+            await outputFile.create(recursive: true);
+            await outputFile.writeAsBytes(file.content as List<int>);
+          }
+        }
+        
+        setState(() => _isLoading = false);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Account "$actualUsername" imported successfully!')),
+          );
+          
+          // Navigate to home screen with the imported account
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        }
+      } catch (e) {
+        setState(() => _isLoading = false);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to import account: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,6 +212,14 @@ class _AuthScreenState extends State<AuthScreen> {
               child: TextButton(
                 onPressed: _isLoading ? null : _loginAsGuest,
                 child: const Text('Continue as Guest'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _importAccount(context),
+                child: const Text('Import Account'),
               ),
             ),
           ],

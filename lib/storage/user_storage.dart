@@ -35,6 +35,12 @@ class UserStorage {
     return '$baseDir/users/$username';
   }
 
+  /// Gets the users directory: /app/users/
+  static Future<String> getUsersDirectory([User? user]) async {
+    final baseDir = await _appDirectory;
+    return '$baseDir/users';
+  }
+
   /// Gets the campaign directory for a specific campaign: /app/users/{username}/campaigns/{campaignId}/
   static Future<String> getCampaignDirectory(String campaignId, [User? user]) async {
     final userDir = await getUserDirectory(user);
