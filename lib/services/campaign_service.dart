@@ -5,6 +5,7 @@ import '../storage/campaign_storage.dart';
 import '../storage/user_storage.dart';
 import '../utils/dialog_utils.dart';
 import '../screens/camera_screen.dart';
+import 'dart:io';
 
 class CampaignService {
   static bool _isSameDate(DateTime date1, DateTime date2) {
@@ -59,4 +60,31 @@ class CampaignService {
     final allPhotos = await UserStorage.loadPhotos();
     return allPhotos.where((photo) => photo.campaignId == campaignId).length;
   }
+
+  static Future<Campaign> createCampaignFromImport(DateTime date, List<File> imageFiles) async {
+  final campaign = Campaign(
+    id: DateTime.now().millisecondsSinceEpoch.toString(),
+    date: date,
+    photoIds: [],
+  );
+  
+  // First, add the campaign to storage
+  await CampaignStorage.addCampaign(campaign);
+  
+  // Ensure campaign directory exists
+  await UserStorage.ensureCampaignDirectoryExists(campaign.id);
+  
+  // Copy photos to campaign directory
+  final campaignDir = await UserStorage.getCampaignDirectory(campaign.id);
+  
+  for (int i = 0; i < imageFiles.length; i++) {
+    final sourceFile = imageFiles[i];
+    final extension = sourceFile.path.split('.').last;
+    final targetFile = File('$campaignDir/photo_$i.$extension');
+    await targetFile.create(recursive: true);
+    await sourceFile.copy(targetFile.path);
+  }
+  
+  return campaign;
+}
 }

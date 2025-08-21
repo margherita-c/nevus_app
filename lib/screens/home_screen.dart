@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'dart:developer' as developer;
 import '../services/export_service.dart';
 import 'campaign_detail_screen.dart';
 import 'photo_gallery_screen.dart';
@@ -119,6 +122,67 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _importCampaign() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.image,
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      setState(() => _isLoading = true);
+      
+      try {
+        // Get the earliest date from all selected photos
+        DateTime? campaignDate;
+        
+        for (final file in result.files) {
+          if (file.path != null) {
+            final imageFile = File(file.path!);
+            final lastModified = await imageFile.lastModified();
+            
+            if (campaignDate == null || lastModified.isBefore(campaignDate)) {
+              campaignDate = lastModified;
+            }
+          }
+        }
+        
+        if (campaignDate == null) {
+          throw Exception('Could not determine campaign date');
+        }
+
+        developer.log('Creating campaign with date: $campaignDate', name: 'HomeScreen.ImportCampaign');
+
+        // Create the campaign using CampaignService
+        final campaign = await CampaignService.createCampaignFromImport(
+          campaignDate,
+          result.files.where((f) => f.path != null).map((f) => File(f.path!)).toList(),
+        );
+        
+        developer.log('Campaign created: ${campaign.id}', name: 'HomeScreen.ImportCampaign');
+        
+        setState(() => _isLoading = false);
+        
+        if (mounted) {
+          final dateStr = '${campaign.date.day}/${campaign.date.month}/${campaign.date.year}';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Campaign "$dateStr" imported with ${result.files.length} photos')),
+          );
+          
+          // Reload campaigns to show the new one
+          await _loadCampaigns();
+        }
+      } catch (e) {
+        developer.log('Import error: $e', name: 'HomeScreen.ImportCampaign', error: e);
+        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to import campaign: $e')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = UserStorage.currentUser;
@@ -213,7 +277,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
             
-            // Quick Actions
+            // Quick Actions - 2x2 Grid
             Row(
               children: [
                 Expanded(
@@ -227,6 +291,21 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _importCampaign,
+                    icon: const Icon(Icons.file_upload),
+                    label: const Text('Import Campaign'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            Row(
+              children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
