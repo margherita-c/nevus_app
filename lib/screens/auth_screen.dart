@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:archive/archive.dart';
 import 'home_screen.dart';
 import '../storage/user_storage.dart';
@@ -109,14 +110,22 @@ class _AuthScreenState extends State<AuthScreen> {
         final bytes = await file.readAsBytes();
         final archive = ZipDecoder().decodeBytes(bytes);
         
+        // Debug: Log archive contents
+        developer.log('Archive contents:', name: 'AuthScreen.Import');
+        for (final file in archive) {
+          developer.log('File: ${file.name}, isFile: ${file.isFile}', name: 'AuthScreen.Import');
+        }
+        
         // Find user data file to get the actual username
         String? actualUsername;
         for (final file in archive) {
           final basename = file.name.split('/').last;
+          developer.log('Checking file: ${file.name}, basename: $basename', name: 'AuthScreen.Import');
           if (file.isFile && basename == 'user.json') {
             final userData = String.fromCharCodes(file.content as List<int>);
             final userJson = jsonDecode(userData);
             actualUsername = userJson['username'];
+            developer.log('Found username: $actualUsername', name: 'AuthScreen.Import');
             break;
           }
         }
@@ -125,26 +134,47 @@ class _AuthScreenState extends State<AuthScreen> {
           throw Exception('No user data found in archive');
         }
         
+        developer.log('Importing data for username: $actualUsername', name: 'AuthScreen.Import');
+        
         // Create new user with the actual username from the archive
         final importedUser = User(username: actualUsername);
         UserStorage.setCurrentUser(importedUser);
         
-        // Extract all files to the user's directory
-        final usersDir = await UserStorage.getUsersDirectory();
+        // Ensure user directory exists
+        await UserStorage.ensureUserDirectoryExists(importedUser);
+        final userDir = await UserStorage.getUserDirectory(importedUser);
         
-        for (final file in archive) {
-          if (file.isFile) {
-            final outputFile = File('$usersDir/${file.name}');
-            await outputFile.create(recursive: true);
-            await outputFile.writeAsBytes(file.content as List<int>);
+        // Extract all files to the user's directory
+        int filesExtracted = 0;
+        for (final archiveFile in archive) {
+          if (archiveFile.isFile) {
+            // The archive structure is: username/filepath
+            // We need to extract to: userDir/filepath (removing the username prefix)
+            final pathParts = archiveFile.name.split('/');
+            if (pathParts.length > 1 && pathParts[0] == actualUsername) {
+              // Remove the username from the path
+              final relativePath = pathParts.sublist(1).join('/');
+              final outputFile = File('$userDir/$relativePath');
+              
+              developer.log('Extracting: ${archiveFile.name} -> ${outputFile.path}', name: 'AuthScreen.Import');
+              
+              await outputFile.create(recursive: true);
+              await outputFile.writeAsBytes(archiveFile.content as List<int>);
+              filesExtracted++;
+            }
           }
         }
+        
+        developer.log('Extracted $filesExtracted files', name: 'AuthScreen.Import');
         
         setState(() => _isLoading = false);
         
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Account "$actualUsername" imported successfully!')),
+            SnackBar(
+              content: Text('Account "$actualUsername" imported successfully! ($filesExtracted files)'),
+              backgroundColor: Colors.green,
+            ),
           );
           
           // Navigate to home screen with the imported account
@@ -155,12 +185,19 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       } catch (e) {
         setState(() => _isLoading = false);
+        developer.log('Import error: $e', name: 'AuthScreen.Import', error: e);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to import account: $e')),
+            SnackBar(
+              content: Text('Failed to import account: $e'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
+    } else {
+      // User cancelled file selection
+      developer.log('User cancelled file selection', name: 'AuthScreen.Import');
     }
   }
 
