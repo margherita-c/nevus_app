@@ -1,6 +1,6 @@
-// Create: lib/widgets/photo_grid_item.dart
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:developer' as developer;
 import '../models/photo.dart';
 
 class PhotoGridItem extends StatelessWidget {
@@ -15,6 +15,8 @@ class PhotoGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageFile = File(photo.path);
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -32,11 +34,36 @@ class PhotoGridItem extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(8.0),
-              child: Image.file(
-                File(photo.path),
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+              child: FutureBuilder<bool>(
+                future: imageFile.exists(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  
+                  if (snapshot.hasData && snapshot.data == true) {
+                    return Image.file(
+                      imageFile,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        developer.log('Error loading image: ${photo.path}, error: $error', name: 'PhotoGridItem');
+                        return _buildErrorWidget();
+                      },
+                    );
+                  } else {
+                    developer.log('Image file not found: ${photo.path}', name: 'PhotoGridItem');
+                    return _buildErrorWidget();
+                  }
+                },
               ),
             ),
             // Photo description overlay
@@ -89,6 +116,33 @@ class PhotoGridItem extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.grey[300],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.broken_image,
+            size: 40,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Image not found',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

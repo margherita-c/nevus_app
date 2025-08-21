@@ -6,6 +6,7 @@ import 'package:archive/archive.dart';
 import 'home_screen.dart';
 import '../storage/user_storage.dart';
 import '../models/user.dart';
+import '../models/photo.dart';
 import 'dart:convert';
 
 class AuthScreen extends StatefulWidget {
@@ -167,6 +168,12 @@ class _AuthScreenState extends State<AuthScreen> {
         
         developer.log('Extracted $filesExtracted files', name: 'AuthScreen.Import');
         
+        // Fix photo paths in the imported data
+        await _fixImportedPhotoPaths(importedUser);
+        
+        // Validate the import
+        await _validateImport(importedUser);
+        
         setState(() => _isLoading = false);
         
         if (context.mounted) {
@@ -198,6 +205,109 @@ class _AuthScreenState extends State<AuthScreen> {
     } else {
       // User cancelled file selection
       developer.log('User cancelled file selection', name: 'AuthScreen.Import');
+    }
+  }
+
+  /// Fixes photo paths after importing to point to the correct local file locations
+  Future<void> _fixImportedPhotoPaths(User user) async {
+    try {
+      developer.log('Fixing imported photo paths for user: ${user.username}', name: 'AuthScreen.Import');
+      
+      // Load the imported photos
+      final photos = await UserStorage.loadPhotos(user);
+      bool pathsChanged = false;
+      
+      for (int i = 0; i < photos.length; i++) {
+        final photo = photos[i];
+        final originalPath = photo.path;
+        
+        // Extract filename from the original path
+        final filename = originalPath.split('/').last;
+        
+        // Check if this photo belongs to a campaign
+        if (photo.campaignId.isNotEmpty && photo.campaignId != 'default_campaign') {
+          // Look for the file in the campaign directory
+          final campaignDir = await UserStorage.getCampaignDirectory(photo.campaignId, user);
+          final newPath = '$campaignDir/$filename';
+          
+          if (await File(newPath).exists()) {
+            // Update the photo with the correct path
+            photos[i] = Photo(
+              id: photo.id,
+              path: newPath,
+              dateTaken: photo.dateTaken,
+              description: photo.description,
+              campaignId: photo.campaignId,
+              spots: photo.spots,
+            );
+            pathsChanged = true;
+            developer.log('Updated photo path: $originalPath -> $newPath', name: 'AuthScreen.Import');
+          } else {
+            developer.log('Warning: Photo file not found at expected location: $newPath', name: 'AuthScreen.Import');
+          }
+        } else {
+          // Look for the file in the user's root directory
+          final userDir = await UserStorage.getUserDirectory(user);
+          final newPath = '$userDir/$filename';
+          
+          if (await File(newPath).exists()) {
+            photos[i] = Photo(
+              id: photo.id,
+              path: newPath,
+              dateTaken: photo.dateTaken,
+              description: photo.description,
+              campaignId: photo.campaignId,
+              spots: photo.spots,
+            );
+            pathsChanged = true;
+            developer.log('Updated photo path: $originalPath -> $newPath', name: 'AuthScreen.Import');
+          } else {
+            developer.log('Warning: Photo file not found at expected location: $newPath', name: 'AuthScreen.Import');
+          }
+        }
+      }
+      
+      // Save the updated photos if any paths were changed
+      if (pathsChanged) {
+        await UserStorage.savePhotos(photos, user);
+        developer.log('Updated ${photos.length} photo paths', name: 'AuthScreen.Import');
+      } else {
+        developer.log('No photo paths needed updating', name: 'AuthScreen.Import');
+      }
+      
+    } catch (e) {
+      developer.log('Error fixing photo paths: $e', name: 'AuthScreen.Import', error: e);
+      // Don't throw here as import was otherwise successful
+    }
+  }
+
+  /// Validates the imported data and logs summary information
+  Future<void> _validateImport(User user) async {
+    try {
+      developer.log('Validating imported data for user: ${user.username}', name: 'AuthScreen.Import');
+      
+      // Check photos
+      final photos = await UserStorage.loadPhotos(user);
+      int validPhotos = 0;
+      for (final photo in photos) {
+        if (await File(photo.path).exists()) {
+          validPhotos++;
+        }
+      }
+      
+      // Check campaigns
+      final campaigns = await UserStorage.loadCampaigns(user);
+      
+      // Check moles
+      final moles = await UserStorage.loadMoles(user);
+      
+      developer.log(
+        'Import validation complete - Photos: $validPhotos/${photos.length} valid, Campaigns: ${campaigns.length}, Moles: ${moles.length}',
+        name: 'AuthScreen.Import'
+      );
+      
+    } catch (e) {
+      developer.log('Error validating import: $e', name: 'AuthScreen.Import', error: e);
     }
   }
 
