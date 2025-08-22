@@ -127,48 +127,57 @@ class HomeScreenState extends State<HomeScreen> {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.image,
+      allowCompression: false,
     );
 
     if (result != null && result.files.isNotEmpty) {
       setState(() => _isLoading = true);
       
       try {
+        developer.log('Starting import with ${result.files.length} files', name: 'HomeScreen.ImportCampaign');
+        
         // Convert file picker results to File objects
         final imageFiles = result.files
             .where((f) => f.path != null)
             .map((f) => File(f.path!))
             .toList();
         
+        developer.log('Converted to ${imageFiles.length} File objects', name: 'HomeScreen.ImportCampaign');
+        
         // Get the earliest capture date from photo EXIF data
+        developer.log('Extracting photo dates...', name: 'HomeScreen.ImportCampaign');
         final campaignDate = await PhotoMetadataService.getEarliestPhotoDate(imageFiles);
-
-        developer.log('Creating campaign with date: $campaignDate', name: 'HomeScreen.ImportCampaign');
+        developer.log('Campaign date determined: $campaignDate', name: 'HomeScreen.ImportCampaign');
 
         // Create the campaign using CampaignService
+        developer.log('Creating campaign...', name: 'HomeScreen.ImportCampaign');
         final campaign = await CampaignService.createCampaignFromImport(
           campaignDate,
           imageFiles,
         );
         
-        developer.log('Campaign created: ${campaign.id}', name: 'HomeScreen.ImportCampaign');
+        developer.log('Campaign created: ${campaign.id} with ${campaign.photoIds.length} photos', name: 'HomeScreen.ImportCampaign');
         
         setState(() => _isLoading = false);
         
         if (mounted) {
           final dateStr = '${campaign.date.day}/${campaign.date.month}/${campaign.date.year}';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Campaign "$dateStr" imported with ${result.files.length} photos')),
+            SnackBar(content: Text('Campaign "$dateStr" imported with ${campaign.photoIds.length} photos')),
           );
           
           // Reload campaigns to show the new one
           await _loadCampaigns();
         }
-      } catch (e) {
-        developer.log('Import error: $e', name: 'HomeScreen.ImportCampaign', error: e);
+      } catch (e, stackTrace) {
+        developer.log('Import error: $e', name: 'HomeScreen.ImportCampaign', error: e, stackTrace: stackTrace);
         setState(() => _isLoading = false);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to import campaign: $e')),
+            SnackBar(
+              content: Text('Failed to import campaign: $e'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
