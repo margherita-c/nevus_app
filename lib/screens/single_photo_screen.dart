@@ -119,6 +119,17 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
     }
   }
 
+  void _handleResizeSpot(double delta) async {
+    if (selectedSpotIndex != null) {
+      setState(() {
+        final currentRadius = widget.photo.spots[selectedSpotIndex!].radius;
+        final newRadius = (currentRadius + delta).clamp(10.0, 100.0); // Constrain radius between 10 and 100 pixels
+        widget.photo.spots[selectedSpotIndex!].radius = newRadius;
+      });
+      await _savePhotoChanges();
+    }
+  }
+
   void _handleDeleteSpot() async {
     if (selectedSpotIndex == null) return;
     
@@ -234,6 +245,7 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
               transformationController: _transformationController,
               onAddSpot: _handleAddSpot,
               onDragSpot: _handleDragSpot,
+              onResizeSpot: _handleResizeSpot,
               onSelectSpot: (index) => setState(() {
                 selectedSpotIndex = index;
                 markAction = MarkAction.none;

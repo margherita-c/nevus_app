@@ -7,6 +7,7 @@ class SpotWidget extends StatelessWidget {
   final Mole mole;
   final bool isSelected;
   final bool isMarkMode;
+  final bool isResizeMode;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
 
@@ -16,6 +17,7 @@ class SpotWidget extends StatelessWidget {
     required this.mole,
     required this.isSelected,
     required this.isMarkMode,
+    this.isResizeMode = false,
     this.onTap,
     this.onEdit,
   });
@@ -37,7 +39,11 @@ class SpotWidget extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.red,
+                  color: isSelected && isResizeMode 
+                    ? Colors.orange 
+                    : isSelected 
+                      ? Colors.blue 
+                      : Colors.red,
                   width: isSelected ? 4 : 2,
                 ),
                 color: Colors.red.withValues(alpha: 0.0),

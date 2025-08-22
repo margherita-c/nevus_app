@@ -15,6 +15,7 @@ class InteractivePhotoViewer extends StatelessWidget {
   final TransformationController transformationController;
   final Function(Offset) onAddSpot;
   final Function(Offset) onDragSpot;
+  final Function(double) onResizeSpot; // Added resize callback
   final Function(int) onSelectSpot;
   final Function(int) onEditSpot; // Added edit spot callback
 
@@ -28,6 +29,7 @@ class InteractivePhotoViewer extends StatelessWidget {
     required this.transformationController,
     required this.onAddSpot,
     required this.onDragSpot,
+    required this.onResizeSpot,
     required this.onSelectSpot,
     required this.onEditSpot,
   });
@@ -72,6 +74,7 @@ class InteractivePhotoViewer extends StatelessWidget {
                     mole: currentMole,
                     isSelected: selectedSpotIndex == index,
                     isMarkMode: isMarkMode,
+                    isResizeMode: markAction == MarkAction.resize && selectedSpotIndex == index,
                     onTap: () => onSelectSpot(index),
                     onEdit: () => onEditSpot(index), // Add edit callback
                   );
@@ -90,6 +93,8 @@ class InteractivePhotoViewer extends StatelessWidget {
                 : null,
               onPanUpdate: markAction == MarkAction.drag && selectedSpotIndex != null
                 ? (details) => _handleDragSpot(details)
+                : markAction == MarkAction.resize && selectedSpotIndex != null
+                ? (details) => _handleResizeSpot(details)
                 : null,
               // Add this line to allow zoom gestures to pass through:
               onScaleStart: markAction == MarkAction.none ? (_) {} : null,
@@ -116,5 +121,12 @@ class InteractivePhotoViewer extends StatelessWidget {
     final double scale = transformationController.value.getMaxScaleOnAxis();
     final Offset transformedDelta = details.delta / scale;
     onDragSpot(transformedDelta);
+  }
+
+  void _handleResizeSpot(DragUpdateDetails details) {
+    // Calculate resize delta based on vertical drag movement
+    final double scale = transformationController.value.getMaxScaleOnAxis();
+    final double resizeDelta = -details.delta.dy / scale; // Negative so dragging up increases size
+    onResizeSpot(resizeDelta);
   }
 }
