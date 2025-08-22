@@ -41,6 +41,7 @@ dependencies:
   file_picker: ^8.0.5
   archive: ^3.4.10
   share_plus: ^7.2.2
+  exif: ^3.3.0 # For reading photo metadata including capture date
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.4

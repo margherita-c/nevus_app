@@ -1,10 +1,12 @@
 // Create: lib/services/campaign_service.dart
 import 'package:flutter/material.dart';
 import '../models/campaign.dart';
+import '../models/photo.dart';
 import '../storage/campaign_storage.dart';
 import '../storage/user_storage.dart';
 import '../utils/dialog_utils.dart';
 import '../screens/camera_screen.dart';
+import '../services/photo_metadata_service.dart';
 import 'dart:io';
 
 class CampaignService {
@@ -63,7 +65,7 @@ class CampaignService {
 
   static Future<Campaign> createCampaignFromImport(DateTime date, List<File> imageFiles) async {
   final campaign = Campaign(
-    id: DateTime.now().millisecondsSinceEpoch.toString(),
+    id: 'campaign_${date.millisecondsSinceEpoch}',
     date: date,
     photoIds: [],
   );
@@ -74,16 +76,42 @@ class CampaignService {
   // Ensure campaign directory exists
   await UserStorage.ensureCampaignDirectoryExists(campaign.id);
   
-  // Copy photos to campaign directory
+  // Copy photos to campaign directory and create Photo objects
   final campaignDir = await UserStorage.getCampaignDirectory(campaign.id);
+  List<String> photoIds = [];
   
   for (int i = 0; i < imageFiles.length; i++) {
     final sourceFile = imageFiles[i];
     final extension = sourceFile.path.split('.').last;
-    final targetFile = File('$campaignDir/photo_$i.$extension');
+    final photoId = 'photo_${date.millisecondsSinceEpoch}_$i';
+    final targetFile = File('$campaignDir/$photoId.$extension');
+    
     await targetFile.create(recursive: true);
     await sourceFile.copy(targetFile.path);
+    
+    // Get the actual capture date from the photo's EXIF data
+    final photoCaptureDate = await PhotoMetadataService.getPhotoCaptureDate(sourceFile) ?? date;
+    
+    // Create Photo object and add to storage
+    final photo = Photo(
+      id: photoId,
+      path: targetFile.path,
+      dateTaken: photoCaptureDate,
+      description: 'Imported photo ${i + 1}',
+      campaignId: campaign.id,
+    );
+    
+    // Add photo to photos storage
+    final photos = await UserStorage.loadPhotos();
+    photos.add(photo);
+    await UserStorage.savePhotos(photos);
+    
+    photoIds.add(photoId);
   }
+  
+  // Update campaign with photo IDs
+  campaign.photoIds.addAll(photoIds);
+  await CampaignStorage.updateCampaign(campaign);
   
   return campaign;
 }

@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'dart:developer' as developer;
 import '../services/export_service.dart';
+import '../services/photo_metadata_service.dart';
 import 'campaign_detail_screen.dart';
 import 'photo_gallery_screen.dart';
 import 'auth_screen.dart';
@@ -132,30 +133,21 @@ class HomeScreenState extends State<HomeScreen> {
       setState(() => _isLoading = true);
       
       try {
-        // Get the earliest date from all selected photos
-        DateTime? campaignDate;
+        // Convert file picker results to File objects
+        final imageFiles = result.files
+            .where((f) => f.path != null)
+            .map((f) => File(f.path!))
+            .toList();
         
-        for (final file in result.files) {
-          if (file.path != null) {
-            final imageFile = File(file.path!);
-            final lastModified = await imageFile.lastModified();
-            
-            if (campaignDate == null || lastModified.isBefore(campaignDate)) {
-              campaignDate = lastModified;
-            }
-          }
-        }
-        
-        if (campaignDate == null) {
-          throw Exception('Could not determine campaign date');
-        }
+        // Get the earliest capture date from photo EXIF data
+        final campaignDate = await PhotoMetadataService.getEarliestPhotoDate(imageFiles);
 
         developer.log('Creating campaign with date: $campaignDate', name: 'HomeScreen.ImportCampaign');
 
         // Create the campaign using CampaignService
         final campaign = await CampaignService.createCampaignFromImport(
           campaignDate,
-          result.files.where((f) => f.path != null).map((f) => File(f.path!)).toList(),
+          imageFiles,
         );
         
         developer.log('Campaign created: ${campaign.id}', name: 'HomeScreen.ImportCampaign');
