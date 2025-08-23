@@ -21,20 +21,14 @@ class UserStorage {
   /// Sets the current user.
   static void setCurrentUser(User user) async {
     _currentUser = user;
-    _userDirectory = await initUserDirectory(user);
+    final baseDir = await _appDirectory;
+    _userDirectory = '$baseDir/users/${user.username}';
   }
 
   /// Gets the base app directory.
   static Future<String> get _appDirectory async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
-  }
-
-  /// Gets the user's data directory: /app/users/{username}/
-  static Future<String> initUserDirectory([User? user]) async {
-    final baseDir = await _appDirectory;
-    final username = (user ?? currentUser).username;
-    return '$baseDir/users/$username';
   }
 
   static String get userDirectory => _userDirectory;
@@ -49,6 +43,14 @@ class UserStorage {
   static Future<String> getCampaignDirectory(String campaignId, [User? user]) async {
     final userDir = userDirectory;
     return '$userDir/campaigns/$campaignId';
+  }
+
+  ///Get relative directory
+  static String getRelativePath(String fullPath) {
+    if (fullPath.startsWith(_userDirectory)) {
+      return fullPath.substring(_userDirectory.length + 1); // +1 to remove the slash
+    }
+    return fullPath; // Return as-is if not under base path
   }
 
   /// Ensures user directory structure exists.
@@ -104,7 +106,8 @@ class UserStorage {
     await ensureUserDirectoryExists(user);
     final file = await _photosJsonFile(user);
     final jsonData = photos.map((photo) => photo.toJson()).toList();
-    await file.writeAsString(json.encode(jsonData));
+    var encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(jsonData));
   }
 
   // Load/Save Campaigns
@@ -126,7 +129,8 @@ class UserStorage {
     await ensureUserDirectoryExists(user);
     final file = await _campaignsJsonFile(user);
     final jsonData = campaigns.map((campaign) => campaign.toJson()).toList();
-    await file.writeAsString(json.encode(jsonData));
+    var encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(jsonData));
   }
 
   // Load/Save Moles
@@ -152,7 +156,8 @@ class UserStorage {
       await ensureUserDirectoryExists(user);
       final file = await _molesJsonFile(user);
       final jsonData = moles.map((mole) => mole.toJson()).toList();
-      await file.writeAsString(json.encode(jsonData));
+      var encoder = JsonEncoder.withIndent('  ');
+      await file.writeAsString(encoder.convert(jsonData));
     } catch (e) {
       throw Exception('Failed to save moles: $e');
     }
@@ -177,15 +182,17 @@ class UserStorage {
   static Future<void> createUser(User user) async {
     await ensureUserDirectoryExists(user);
     final file = File('$userDirectory/user.json');
-    await file.writeAsString(json.encode(user.toJson()));
+    var encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(user.toJson()));
   }
   
   // Update an existing user
   static Future<void> updateUser(User user) async {
     await ensureUserDirectoryExists(user);
     final file = File('$userDirectory/user.json');
-    await file.writeAsString(json.encode(user.toJson()));
-    
+    var encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(user.toJson()));
+
     // Update the current user in memory if it's the same user
     if (currentUser.username == user.username) {
       setCurrentUser(user);
@@ -197,7 +204,8 @@ class UserStorage {
       final userFile = File('$userDirectory/user.json');
       
       // Use the current user data that's already in memory
-      await userFile.writeAsString(json.encode(currentUser.toJson()));
+      var encoder = JsonEncoder.withIndent('  ');
+      await userFile.writeAsString(encoder.convert(currentUser.toJson()));
     } catch (e) {
       throw Exception('Failed to save current user: $e');
     }

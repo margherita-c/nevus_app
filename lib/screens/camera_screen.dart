@@ -68,10 +68,8 @@ class CameraScreenState extends State<CameraScreen> {
       await UserStorage.ensureCampaignDirectoryExists(widget.campaignId!);
       imagePath = path.join(campaignDir, '${DateTime.now().millisecondsSinceEpoch}.jpg');
     } else {
-      // Fallback to user directory
-      final userDir = UserStorage.userDirectory;
-      await UserStorage.ensureUserDirectoryExists();
-      imagePath = path.join(userDir, '${DateTime.now().millisecondsSinceEpoch}.jpg');
+      developer.log('Error: Take picture without campaign', name: 'CameraScreen');
+      return;
     }
     
     developer.log('Saving picture to $imagePath', name: 'CameraScreen');
@@ -86,7 +84,7 @@ class CameraScreenState extends State<CameraScreen> {
 
       final newPhoto = Photo(
         id: 'photo_${DateTime.now().millisecondsSinceEpoch}',
-        path: imagePath,
+        relativePath: UserStorage.getRelativePath(imagePath),
         dateTaken: DateTime.now(),
         description: description,
         campaignId: widget.campaignId ?? 'default_campaign',

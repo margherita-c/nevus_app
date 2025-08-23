@@ -20,7 +20,8 @@ class PhotoStorage {
   static Future<void> savePhotos(List<Photo> photos) async {
     final file = await _localFile;
     final jsonList = photos.map((p) => p.toJson()).toList();
-    await file.writeAsString(jsonEncode(jsonList));
+    var encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(jsonList));
     developer.log('Photo saved successfully', name: 'CameraScreen');
   }
 

@@ -126,7 +126,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         // Create Photo object
         final newPhoto = Photo(
           id: 'imported_photo_${timestamp}_$i',
-          path: destinationPath,
+          relativePath: UserStorage.getRelativePath(destinationPath),
           dateTaken: DateTime.now(), // Use import time as date taken
           description: description ?? 'Imported photo',
           campaignId: widget.campaign.id,
@@ -258,7 +258,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     final photo = _campaignPhotos[index];
     final updatedPhoto = Photo(
       id: photo.id,
-      path: photo.path,
+      relativePath: photo.relativePath,
       dateTaken: photo.dateTaken,
       description: newDescription,
       campaignId: photo.campaignId,

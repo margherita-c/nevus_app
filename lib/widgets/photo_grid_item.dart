@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:developer' as developer;
 import '../models/photo.dart';
+import '../storage/user_storage.dart';
 
 class PhotoGridItem extends StatelessWidget {
   final Photo photo;
@@ -15,8 +16,9 @@ class PhotoGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageFile = File(photo.path);
-    
+    final fullPath = '${UserStorage.userDirectory}/${photo.relativePath}';
+    final imageFile = File(fullPath);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -55,12 +57,12 @@ class PhotoGridItem extends StatelessWidget {
                       width: double.infinity,
                       height: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
-                        developer.log('Error loading image: ${photo.path}, error: $error', name: 'PhotoGridItem');
+                        developer.log('Error loading image: ${photo.relativePath}, error: $error', name: 'PhotoGridItem');
                         return _buildErrorWidget();
                       },
                     );
                   } else {
-                    developer.log('Image file not found: ${photo.path}', name: 'PhotoGridItem');
+                    developer.log('Image file not found: ${photo.relativePath}', name: 'PhotoGridItem');
                     return _buildErrorWidget();
                   }
                 },

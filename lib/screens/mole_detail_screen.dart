@@ -228,6 +228,7 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
   }
 
   Widget _buildPhotoThumbnail(Photo photo, int index) {
+    final fullPath = '${UserStorage.userDirectory}/${photo.relativePath}';
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -256,7 +257,7 @@ class _MoleDetailScreenState extends State<MoleDetailScreen> {
               AspectRatio(
                 aspectRatio: 1,
                 child: Image.file(
-                  File(photo.path),
+                  File(fullPath),
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(

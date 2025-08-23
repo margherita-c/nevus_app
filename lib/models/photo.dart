@@ -33,7 +33,7 @@ class Photo {
   /// 
   /// Points to the actual image file on the device's storage.
   /// Used for loading and displaying the photo in the UI.
-  final String path;
+  final String relativePath;
   
   /// The date and time when this photo was taken.
   /// 
@@ -70,7 +70,7 @@ class Photo {
   /// All other parameters are required for proper photo management.
   Photo({
     required this.id,
-    required this.path,
+    required this.relativePath,
     required this.dateTaken,
     required this.description,
     required this.campaignId,
@@ -86,7 +86,7 @@ class Photo {
   /// Returns a map that can be encoded to JSON.
   Map<String, dynamic> toJson() => {
     'id': id,
-    'path': path,
+    'relativePath': relativePath,
     'dateTaken': dateTaken.toIso8601String(),
     'description': description,
     'campaignId': campaignId,
@@ -103,7 +103,7 @@ class Photo {
   /// default to an empty list.
   factory Photo.fromJson(Map<String, dynamic> json) => Photo(
     id: json['id'],
-    path: json['path'],
+    relativePath: json['relativePath'],
     dateTaken: DateTime.parse(json['dateTaken']),
     description: json['description'] ?? '',
     campaignId: json['campaignId'] ?? '',

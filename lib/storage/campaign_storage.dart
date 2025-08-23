@@ -29,7 +29,8 @@ class CampaignStorage {
     await UserStorage.ensureUserDirectoryExists();
     final file = await _localFile;
     final jsonData = campaigns.map((campaign) => campaign.toJson()).toList();
-    await file.writeAsString(json.encode(jsonData));
+    var encoder = JsonEncoder.withIndent('  ');
+    await file.writeAsString(encoder.convert(jsonData));
   }
 
   static Future<void> addCampaign(Campaign campaign) async {

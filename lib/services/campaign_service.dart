@@ -107,7 +107,7 @@ class CampaignService {
     // Create Photo object and add to storage
     final photo = Photo(
       id: photoId,
-      path: targetFile.path,
+      relativePath: UserStorage.getRelativePath(targetFile.path),
       dateTaken: photoCaptureDate,
       description: 'Imported photo ${i + 1}',
       campaignId: campaign.id,

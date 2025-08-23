@@ -44,7 +44,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
     setState(() {
       _imageFiles[index] = Photo(
         id: _imageFiles[index].id,
-        path: _imageFiles[index].path,
+        relativePath: _imageFiles[index].relativePath,
         dateTaken: _imageFiles[index].dateTaken,
         description: newDescription,
         campaignId: _imageFiles[index].campaignId,

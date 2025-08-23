@@ -5,6 +5,7 @@ import '../models/photo.dart';
 import '../models/mole.dart';
 import 'spot_widget.dart';
 import 'mark_mode_controls.dart';
+import '../storage/user_storage.dart';
 
 class InteractivePhotoViewer extends StatelessWidget {
   final Photo photo;
@@ -36,6 +37,8 @@ class InteractivePhotoViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    UserStorage.ensureUserDirectoryExists();
+    final fullPath = '${UserStorage.userDirectory}/${photo.relativePath}';
     return Stack(
       children: [
         // Interactive viewer with image and spots
@@ -51,7 +54,7 @@ class InteractivePhotoViewer extends StatelessWidget {
                 // Base image
                 Positioned.fill(
                   child: Image.file(
-                    File(photo.path),
+                    File(fullPath),
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(

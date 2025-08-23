@@ -6,7 +6,6 @@ import 'package:archive/archive.dart';
 import 'home_screen.dart';
 import '../storage/user_storage.dart';
 import '../models/user.dart';
-import '../models/photo.dart';
 import 'dart:convert';
 
 class AuthScreen extends StatefulWidget {
@@ -169,7 +168,7 @@ class _AuthScreenState extends State<AuthScreen> {
         developer.log('Extracted $filesExtracted files', name: 'AuthScreen.Import');
         
         // Fix photo paths in the imported data
-        await _fixImportedPhotoPaths(importedUser);
+        //await _fixImportedPhotoPaths(importedUser);
         
         // Validate the import
         await _validateImport(importedUser);
@@ -209,7 +208,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   /// Fixes photo paths after importing to point to the correct local file locations
-  Future<void> _fixImportedPhotoPaths(User user) async {
+ /*  Future<void> _fixImportedPhotoPaths(User user) async {
     try {
       developer.log('Fixing imported photo paths for user: ${user.username}', name: 'AuthScreen.Import');
       
@@ -279,7 +278,7 @@ class _AuthScreenState extends State<AuthScreen> {
       developer.log('Error fixing photo paths: $e', name: 'AuthScreen.Import', error: e);
       // Don't throw here as import was otherwise successful
     }
-  }
+  } */
 
   /// Validates the imported data and logs summary information
   Future<void> _validateImport(User user) async {
@@ -290,7 +289,8 @@ class _AuthScreenState extends State<AuthScreen> {
       final photos = await UserStorage.loadPhotos(user);
       int validPhotos = 0;
       for (final photo in photos) {
-        if (await File(photo.path).exists()) {
+        final fullPath = '${UserStorage.userDirectory}/${photo.relativePath}';
+        if (await File(fullPath).exists()) {
           validPhotos++;
         }
       }
