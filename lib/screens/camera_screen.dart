@@ -69,7 +69,7 @@ class CameraScreenState extends State<CameraScreen> {
       imagePath = path.join(campaignDir, '${DateTime.now().millisecondsSinceEpoch}.jpg');
     } else {
       // Fallback to user directory
-      final userDir = await UserStorage.getUserDirectory();
+      final userDir = UserStorage.userDirectory;
       await UserStorage.ensureUserDirectoryExists();
       imagePath = path.join(userDir, '${DateTime.now().millisecondsSinceEpoch}.jpg');
     }

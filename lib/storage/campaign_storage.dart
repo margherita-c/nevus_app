@@ -6,7 +6,7 @@ import 'user_storage.dart';
 class CampaignStorage {
   /// Gets the campaigns JSON file for the current user
   static Future<File> get _localFile async {
-    final userDir = await UserStorage.getUserDirectory();
+    final userDir = UserStorage.userDirectory;
     return File('$userDir/campaigns.json');
   }
 

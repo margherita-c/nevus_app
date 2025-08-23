@@ -13,13 +13,15 @@ import '../models/mole.dart';
 /// JSON files are stored directly in user folder: /users/{username}/
 class UserStorage {
   static User? _currentUser;
+  static String _userDirectory = '';
   
   /// Gets the current logged-in user, defaults to guest if none.
   static User get currentUser => _currentUser ?? User.guest();
   
   /// Sets the current user.
-  static void setCurrentUser(User user) {
+  static void setCurrentUser(User user) async {
     _currentUser = user;
+    _userDirectory = await initUserDirectory(user);
   }
 
   /// Gets the base app directory.
@@ -29,11 +31,13 @@ class UserStorage {
   }
 
   /// Gets the user's data directory: /app/users/{username}/
-  static Future<String> getUserDirectory([User? user]) async {
+  static Future<String> initUserDirectory([User? user]) async {
     final baseDir = await _appDirectory;
     final username = (user ?? currentUser).username;
     return '$baseDir/users/$username';
   }
+
+  static String get userDirectory => _userDirectory;
 
   /// Gets the users directory: /app/users/
   static Future<String> getUsersDirectory([User? user]) async {
@@ -43,13 +47,13 @@ class UserStorage {
 
   /// Gets the campaign directory for a specific campaign: /app/users/{username}/campaigns/{campaignId}/
   static Future<String> getCampaignDirectory(String campaignId, [User? user]) async {
-    final userDir = await getUserDirectory(user);
+    final userDir = userDirectory;
     return '$userDir/campaigns/$campaignId';
   }
 
   /// Ensures user directory structure exists.
   static Future<void> ensureUserDirectoryExists([User? user]) async {
-    final userDir = await getUserDirectory(user);
+    final userDir = userDirectory;
     final directory = Directory(userDir);
     if (!await directory.exists()) {
       await directory.create(recursive: true);
@@ -67,17 +71,17 @@ class UserStorage {
 
   // JSON file paths in user directory
   static Future<File> _photosJsonFile([User? user]) async {
-    final userDir = await getUserDirectory(user);
+    final userDir = userDirectory;
     return File('$userDir/photos.json');
   }
 
   static Future<File> _campaignsJsonFile([User? user]) async {
-    final userDir = await getUserDirectory(user);
+    final userDir = userDirectory;
     return File('$userDir/campaigns.json');
   }
 
   static Future<File> _molesJsonFile([User? user]) async {
-    final userDir = await getUserDirectory(user);
+    final userDir = userDirectory;
     return File('$userDir/moles.json');
   }
 
@@ -157,7 +161,7 @@ class UserStorage {
   // Load current user by username
   static Future<User?> loadCurrentUser(String username) async {
     try {
-      final userDir = await getUserDirectory(User(username: username));
+      final userDir = userDirectory;
       final file = File('$userDir/user.json');
       if (!await file.exists()) return null;
       
@@ -172,14 +176,14 @@ class UserStorage {
   // Create a new user
   static Future<void> createUser(User user) async {
     await ensureUserDirectoryExists(user);
-    final file = File('${await getUserDirectory(user)}/user.json');
+    final file = File('$userDirectory/user.json');
     await file.writeAsString(json.encode(user.toJson()));
   }
   
   // Update an existing user
   static Future<void> updateUser(User user) async {
     await ensureUserDirectoryExists(user);
-    final file = File('${await getUserDirectory(user)}/user.json');
+    final file = File('$userDirectory/user.json');
     await file.writeAsString(json.encode(user.toJson()));
     
     // Update the current user in memory if it's the same user
@@ -190,8 +194,7 @@ class UserStorage {
   
   static Future<void> saveCurrentUser() async {
     try {
-      final userDir = await getUserDirectory();
-      final userFile = File('$userDir/user.json');
+      final userFile = File('$userDirectory/user.json');
       
       // Use the current user data that's already in memory
       await userFile.writeAsString(json.encode(currentUser.toJson()));
@@ -199,19 +202,4 @@ class UserStorage {
       throw Exception('Failed to save current user: $e');
     }
   }
-  
-  /* static Future<Map<String, dynamic>?> getCurrentUser() async {
-    try {
-      final userDir = await getUserDirectory();
-      final userFile = File('$userDir/current_user.json');
-      
-      if (await userFile.exists()) {
-        final contents = await userFile.readAsString();
-        return jsonDecode(contents);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to load current user: $e');
-    }
-  } */
 }

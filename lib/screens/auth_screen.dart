@@ -143,8 +143,8 @@ class _AuthScreenState extends State<AuthScreen> {
         
         // Ensure user directory exists
         await UserStorage.ensureUserDirectoryExists(importedUser);
-        final userDir = await UserStorage.getUserDirectory(importedUser);
-        
+        final userDir =  UserStorage.userDirectory;
+
         // Extract all files to the user's directory
         int filesExtracted = 0;
         for (final archiveFile in archive) {
@@ -247,7 +247,7 @@ class _AuthScreenState extends State<AuthScreen> {
           }
         } else {
           // Look for the file in the user's root directory
-          final userDir = await UserStorage.getUserDirectory(user);
+          final userDir = UserStorage.userDirectory;
           final newPath = '$userDir/$filename';
           
           if (await File(newPath).exists()) {
