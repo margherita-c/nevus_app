@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/user.dart';
@@ -39,9 +40,36 @@ class UserStorage {
     return '$baseDir/users';
   }
 
-  /// Gets the campaign directory for a specific campaign: /app/users/{username}/campaigns/{campaignId}/
+  /// Gets the campaign directory for a specific campaign: /app/users/{username}/campaigns/{friendlyName}/
   static Future<String> getCampaignDirectory(String campaignId, [User? user]) async {
     final userDir = userDirectory;
+    
+    // Try to get the campaign to extract the date for a friendly name
+    // We need to import CampaignStorage here or use a different approach
+    try {
+      // Load campaigns.json directly from the user directory to avoid circular imports
+      final campaignsFile = File('$userDir/campaigns.json');
+      if (await campaignsFile.exists()) {
+        final contents = await campaignsFile.readAsString();
+        final List<dynamic> jsonData = json.decode(contents);
+        final campaigns = jsonData.map((json) => Campaign.fromJson(json)).toList();
+        
+        final campaign = campaigns.cast<Campaign?>().firstWhere(
+          (c) => c?.id == campaignId, 
+          orElse: () => null
+        );
+        
+        if (campaign != null) {
+          // Use friendly name based on date
+          final friendlyName = getFriendlyCampaignFolderName(campaign.date);
+          return '$userDir/campaigns/$friendlyName';
+        }
+      }
+    } catch (e) {
+      // Fall through to fallback
+    }
+    
+    // Fallback to campaignId for backwards compatibility
     return '$userDir/campaigns/$campaignId';
   }
 
@@ -51,6 +79,46 @@ class UserStorage {
       return fullPath.substring(_userDirectory.length + 1); // +1 to remove the slash
     }
     return fullPath; // Return as-is if not under base path
+  }
+
+  /// Generates a friendly folder name for a campaign based on its date
+  static String getFriendlyCampaignFolderName(DateTime campaignDate) {
+    return 'Campaign_${campaignDate.day.toString().padLeft(2, '0')}-${campaignDate.month.toString().padLeft(2, '0')}-${campaignDate.year}';
+  }
+
+  /// Migrates existing campaign folders to use friendly names
+  static Future<void> migrateCampaignFolders([User? user]) async {
+    try {
+      final userDir = userDirectory;
+      final campaignsDir = Directory('$userDir/campaigns');
+      
+      if (!await campaignsDir.exists()) return;
+      
+      // Load campaigns.json directly to avoid circular imports
+      final campaignsFile = File('$userDir/campaigns.json');
+      if (!await campaignsFile.exists()) return;
+      
+      final contents = await campaignsFile.readAsString();
+      final List<dynamic> jsonData = json.decode(contents);
+      final campaigns = jsonData.map((json) => Campaign.fromJson(json)).toList();
+      
+      for (final campaign in campaigns) {
+        final oldFolderPath = '$userDir/campaigns/${campaign.id}';
+        final newFolderName = getFriendlyCampaignFolderName(campaign.date);
+        final newFolderPath = '$userDir/campaigns/$newFolderName';
+        
+        final oldFolder = Directory(oldFolderPath);
+        final newFolder = Directory(newFolderPath);
+        
+        // Only migrate if old folder exists and new folder doesn't
+        if (await oldFolder.exists() && !await newFolder.exists()) {
+          await oldFolder.rename(newFolderPath);
+          developer.log('Migrated campaign folder: ${campaign.id} -> $newFolderName', name: 'UserStorage.Migrate');
+        }
+      }
+    } catch (e) {
+      developer.log('Error during campaign folder migration: $e', name: 'UserStorage.Migrate', error: e);
+    }
   }
 
   /// Ensures user directory structure exists.

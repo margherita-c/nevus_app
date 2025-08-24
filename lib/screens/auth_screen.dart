@@ -47,6 +47,9 @@ class _AuthScreenState extends State<AuthScreen> {
       // Ensure user directory exists
       await UserStorage.ensureUserDirectoryExists();
 
+      // Migrate campaign folders to friendly names
+      await UserStorage.migrateCampaignFolders();
+
       setState(() => _isLoading = false);
 
       if (mounted) {
@@ -74,6 +77,9 @@ class _AuthScreenState extends State<AuthScreen> {
       
       // Ensure guest directory exists
       await UserStorage.ensureUserDirectoryExists();
+
+      // Migrate campaign folders to friendly names
+      await UserStorage.migrateCampaignFolders();
 
       setState(() => _isLoading = false);
 
@@ -142,6 +148,10 @@ class _AuthScreenState extends State<AuthScreen> {
         
         // Ensure user directory exists
         await UserStorage.ensureUserDirectoryExists(importedUser);
+
+        // Migrate campaign folders to friendly names
+        await UserStorage.migrateCampaignFolders(importedUser);
+
         final userDir =  UserStorage.userDirectory;
 
         // Extract all files to the user's directory
