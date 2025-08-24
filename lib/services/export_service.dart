@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 
 class ExportService {
   static Future<void> exportUserData(String username) async {
@@ -28,7 +29,12 @@ class ExportService {
       
       // Save zip to temporary directory
       final tempDir = await getTemporaryDirectory();
-      final zipFile = File('${tempDir.path}/${username}_export_${DateTime.now().millisecondsSinceEpoch}.zip');
+      
+      // Format date as YYYY-MM-DD
+      final dateFormatter = DateFormat('yyyy-MM-dd');
+      final currentDate = dateFormatter.format(DateTime.now());
+      
+      final zipFile = File('${tempDir.path}/${username}_export_$currentDate.zip');
       await zipFile.writeAsBytes(zipData);
       
       // Share the zip file
