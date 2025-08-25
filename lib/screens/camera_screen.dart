@@ -7,6 +7,7 @@ import 'photo_gallery_screen.dart';
 import '../models/photo.dart';
 import '../storage/user_storage.dart'; // Changed from photo_storage
 import '../storage/campaign_storage.dart'; // Import CampaignStorage
+import '../models/campaign.dart'; // Import Campaign model
 
 class CameraScreen extends StatefulWidget {
   final String? campaignId; // Add campaign support
@@ -21,11 +22,13 @@ class CameraScreenState extends State<CameraScreen> {
   CameraController? _controller;
   List<CameraDescription>? cameras;
   bool _isInitialized = false;
+  Campaign? _campaign; // Add campaign state
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
+    _loadCampaign(); // Load campaign information
   }
 
   Future<void> _initializeCamera() async {
@@ -56,6 +59,30 @@ class CameraScreenState extends State<CameraScreen> {
         );
       }
     }
+  }
+
+  Future<void> _loadCampaign() async {
+    if (widget.campaignId != null) {
+      try {
+        final campaign = await CampaignStorage.getCampaignById(widget.campaignId!);
+        if (mounted && campaign != null) {
+          setState(() {
+            _campaign = campaign;
+          });
+        }
+      } catch (e) {
+        developer.log('Error loading campaign: $e', name: 'CameraScreen');
+      }
+    }
+  }
+
+  String _getCameraTitle() {
+    if (widget.campaignId != null && _campaign != null) {
+      // Format date as YYYY-MM-DD to match folder naming
+      final dateStr = '${_campaign!.date.year}-${_campaign!.date.month.toString().padLeft(2, '0')}-${_campaign!.date.day.toString().padLeft(2, '0')}';
+      return 'Campaign $dateStr';
+    }
+    return 'Camera';
   }
 
   Future<void> _takePicture() async {
@@ -196,15 +223,7 @@ class CameraScreenState extends State<CameraScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Text(widget.campaignId != null ? 'Campaign Photo' : 'Camera'),
-            if (!UserStorage.currentUser.isGuest) ...[
-              const Text(' - '),
-              Text(UserStorage.currentUser.username),
-            ],
-          ],
-        ),
+        title: Text(_getCameraTitle()),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
