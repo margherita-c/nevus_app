@@ -83,7 +83,7 @@ class UserStorage {
 
   /// Generates a friendly folder name for a campaign based on its date
   static String getFriendlyCampaignFolderName(DateTime campaignDate) {
-    return 'Campaign_${campaignDate.day.toString().padLeft(2, '0')}-${campaignDate.month.toString().padLeft(2, '0')}-${campaignDate.year}';
+    return 'Campaign_${campaignDate.year}-${campaignDate.month.toString().padLeft(2, '0')}-${campaignDate.day.toString().padLeft(2, '0')}';
   }
 
   /// Migrates existing campaign folders to use friendly names
