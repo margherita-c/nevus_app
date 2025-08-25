@@ -232,8 +232,10 @@ class UserStorage {
   }
 
   // Load current user by username
-  static Future<User?> loadCurrentUser(String username) async {
+  static Future<User?> loadUser(String username) async {
     try {
+      final baseDir = await _appDirectory;
+      _userDirectory = '$baseDir/users/$username';
       final userDir = userDirectory;
       final file = File('$userDir/user.json');
       if (!await file.exists()) return null;

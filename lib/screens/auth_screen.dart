@@ -32,7 +32,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       // Check if user exists
-      final existingUser = await UserStorage.loadCurrentUser(username);
+      final existingUser = await UserStorage.loadUser(username);
       
       if (existingUser != null) {
         // Existing user - load their data
