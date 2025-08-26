@@ -4,7 +4,7 @@ import '../models/photo.dart';
 import '../storage/campaign_storage.dart';
 import '../storage/user_storage.dart';
 import '../utils/dialog_utils.dart';
-import '../screens/camera_screen.dart';
+import '../screens/campaign_detail_screen.dart';
 import '../services/photo_metadata_service.dart';
 import 'dart:io';
 import 'dart:developer' as developer;
@@ -45,12 +45,12 @@ class CampaignService {
     
     await CampaignStorage.addCampaign(newCampaign);
     
-    // Navigate to camera to start taking photos for this campaign
+    // Navigate to campaign detail screen to view the campaign
     if (context.mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CameraScreen(campaignId: newCampaign.id),
+          builder: (context) => CampaignDetailScreen(campaign: newCampaign),
         ),
       );
     }

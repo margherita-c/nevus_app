@@ -26,6 +26,15 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
   bool _isLoading = true;
   final ImagePicker _picker = ImagePicker();
 
+  /// Check if the campaign is from today's date
+  bool get _isCampaignFromToday {
+    final now = DateTime.now();
+    final campaignDate = widget.campaign.date;
+    return campaignDate.year == now.year &&
+           campaignDate.month == now.month &&
+           campaignDate.day == now.day;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -293,18 +302,19 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         title: Text('Campaign ${widget.campaign.date.day}/${widget.campaign.date.month}/${widget.campaign.date.year}'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.camera_alt),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CameraScreen(campaignId: widget.campaign.id),
-                ),
-              ).then((_) => _loadCampaignPhotos());
-            },
-            tooltip: 'Take Photo',
-          ),
+          if (_isCampaignFromToday)
+            IconButton(
+              icon: const Icon(Icons.camera_alt),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+                  ),
+                ).then((_) => _loadCampaignPhotos());
+              },
+              tooltip: 'Take Photo',
+            ),
           IconButton(
             icon: const Icon(Icons.photo_library_outlined),
             onPressed: _importPhotos,
@@ -369,8 +379,10 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                           style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Take photos with the camera or import from gallery',
+                        Text(
+                          _isCampaignFromToday 
+                            ? 'Take photos with the camera or import from gallery'
+                            : 'You can only import photos for past campaigns',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey),
                         ),
@@ -378,19 +390,20 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CameraScreen(campaignId: widget.campaign.id),
-                                  ),
-                                ).then((_) => _loadCampaignPhotos());
-                              },
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('Take Photo'),
-                            ),
-                            const SizedBox(width: 16),
+                            if (_isCampaignFromToday)
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+                                    ),
+                                  ).then((_) => _loadCampaignPhotos());
+                                },
+                                icon: const Icon(Icons.camera_alt),
+                                label: const Text('Take Photo'),
+                              ),
+                            if (_isCampaignFromToday) const SizedBox(width: 16),
                             ElevatedButton.icon(
                               onPressed: _importPhotos,
                               icon: const Icon(Icons.photo_library_outlined),
@@ -433,7 +446,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: _isCampaignFromToday ? FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
@@ -444,7 +457,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         },
         tooltip: 'Take Photo',
         child: const Icon(Icons.camera_alt),
-      ),
+      ) : null,
     );
   }
 }
