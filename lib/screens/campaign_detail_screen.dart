@@ -387,28 +387,47 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                           style: TextStyle(color: Colors.grey),
                         ),
                         const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Column(
                           children: [
-                            if (_isCampaignFromToday)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_isCampaignFromToday)
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+                                        ),
+                                      ).then((_) => _loadCampaignPhotos());
+                                    },
+                                    icon: const Icon(Icons.camera_alt),
+                                    label: const Text('Take Photo'),
+                                  ),
+                                if (_isCampaignFromToday) const SizedBox(width: 16),
+                                ElevatedButton.icon(
+                                  onPressed: _importPhotos,
+                                  icon: const Icon(Icons.photo_library_outlined),
+                                  label: const Text('Import Photos'),
+                                ),
+                              ],
+                            ),
+                            if (_isCampaignFromToday && _campaignPhotos.isEmpty) ...[
+                              const SizedBox(height: 16),
                               ElevatedButton.icon(
                                 onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+                                  // TODO: Implement replicate campaign functionality
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Replicate campaign functionality will be implemented'),
                                     ),
-                                  ).then((_) => _loadCampaignPhotos());
+                                  );
                                 },
-                                icon: const Icon(Icons.camera_alt),
-                                label: const Text('Take Photo'),
+                                icon: const Icon(Icons.copy),
+                                label: const Text('Replicate Campaign'),
                               ),
-                            if (_isCampaignFromToday) const SizedBox(width: 16),
-                            ElevatedButton.icon(
-                              onPressed: _importPhotos,
-                              icon: const Icon(Icons.photo_library_outlined),
-                              label: const Text('Import Photos'),
-                            ),
+                            ],
                           ],
                         ),
                       ],
