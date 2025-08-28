@@ -51,15 +51,26 @@ class PhotoGridItem extends StatelessWidget {
                   }
                   
                   if (snapshot.hasData && snapshot.data == true) {
-                    return Image.file(
-                      imageFile,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        developer.log('Error loading image: ${photo.relativePath}, error: $error', name: 'PhotoGridItem');
-                        return _buildErrorWidget();
-                      },
+                    return ColorFiltered(
+                      colorFilter: photo.isTemplate 
+                        ? ColorFilter.mode(
+                            Colors.grey.withValues(alpha: 0.6),
+                            BlendMode.saturation,
+                          )
+                        : const ColorFilter.mode(
+                            Colors.transparent,
+                            BlendMode.multiply,
+                          ),
+                      child: Image.file(
+                        imageFile,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) {
+                          developer.log('Error loading image: ${photo.relativePath}, error: $error', name: 'PhotoGridItem');
+                          return _buildErrorWidget();
+                        },
+                      ),
                     );
                   } else {
                     developer.log('Image file not found: ${photo.relativePath}', name: 'PhotoGridItem');
@@ -68,6 +79,38 @@ class PhotoGridItem extends StatelessWidget {
                 },
               ),
             ),
+            // Template indicator
+            if (photo.isTemplate)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.copy,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 2),
+                      Text(
+                        'Template',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             // Photo description overlay
             Positioned(
               bottom: 0,
@@ -95,8 +138,8 @@ class PhotoGridItem extends StatelessWidget {
                   children: [
                     Text(
                       photo.description.isNotEmpty 
-                        ? photo.description 
-                        : 'No description',
+                        ? (photo.isTemplate ? '[Template] ${photo.description}' : photo.description)
+                        : (photo.isTemplate ? '[Template] No description' : 'No description'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,

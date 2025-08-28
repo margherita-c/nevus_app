@@ -35,6 +35,11 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
            campaignDate.day == now.day;
   }
 
+  /// Check if there are any non-template photos in the campaign
+  bool get _hasNonTemplatePhotos {
+    return _campaignPhotos.any((photo) => !photo.isTemplate);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -295,6 +300,209 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     await _loadCampaignPhotos();
   }
 
+  Future<void> _replicateCampaign() async {
+    try {
+      // Show loading dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Finding latest campaign...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Load all campaigns and find the latest one (excluding current)
+      final campaigns = await CampaignStorage.loadCampaigns();
+      campaigns.sort((a, b) => b.date.compareTo(a.date)); // Sort by date descending
+      
+      Campaign? latestCampaign;
+      for (final campaign in campaigns) {
+        if (campaign.id != widget.campaign.id && campaign.photoIds.isNotEmpty) {
+          latestCampaign = campaign;
+          break;
+        }
+      }
+
+      if (latestCampaign == null) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No previous campaign with photos found to replicate'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Load all photos and get photos from the latest campaign
+      final allPhotos = await UserStorage.loadPhotos();
+      final latestCampaignPhotos = allPhotos
+          .where((photo) => photo.campaignId == latestCampaign!.id)
+          .toList();
+
+      if (latestCampaignPhotos.isEmpty) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No photos found in the latest campaign'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        // Show confirmation dialog
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Replicate Campaign'),
+            content: Text(
+              'This will copy ${latestCampaignPhotos.length} template photos from your latest campaign '
+              '(${latestCampaign!.date.day}/${latestCampaign.date.month}/${latestCampaign.date.year}) '
+              'to help you take consistent photos. Continue?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Replicate'),
+              ),
+            ],
+          ),
+        );
+
+        if (confirm != true) return;
+
+        // Show copying progress dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Copying template photos...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Ensure campaign directory exists
+      await UserStorage.ensureCampaignDirectoryExists(widget.campaign.id);
+      final campaignDir = await UserStorage.getCampaignDirectory(widget.campaign.id);
+
+      List<Photo> templatePhotos = [];
+      List<String> newPhotoIds = [];
+
+      for (int i = 0; i < latestCampaignPhotos.length; i++) {
+        final originalPhoto = latestCampaignPhotos[i];
+        
+        // Get the original file path
+        final originalFile = File('${UserStorage.userDirectory}/${originalPhoto.relativePath}');
+        
+        if (!await originalFile.exists()) {
+          continue; // Skip if original file doesn't exist
+        }
+
+        // Create unique filename for template
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final extension = path.extension(originalPhoto.relativePath);
+        final fileName = 'template_${timestamp}_$i$extension';
+        final destinationPath = path.join(campaignDir, fileName);
+
+        // Copy the image file
+        await originalFile.copy(destinationPath);
+
+        // Create template photo object
+        final templatePhoto = Photo(
+          id: 'template_photo_${timestamp}_$i',
+          relativePath: UserStorage.getRelativePath(destinationPath),
+          dateTaken: DateTime.now(), // Use current time for template creation
+          description: originalPhoto.description, // Keep same description
+          campaignId: widget.campaign.id,
+          isTemplate: true, // Mark as template
+          spots: [], // Templates start with no spots
+        );
+
+        templatePhotos.add(templatePhoto);
+        newPhotoIds.add(templatePhoto.id);
+      }
+
+      if (templatePhotos.isNotEmpty) {
+        // Add template photos to storage
+        allPhotos.addAll(templatePhotos);
+        await UserStorage.savePhotos(allPhotos);
+
+        // Update campaign photoIds
+        final updatedCampaigns = await CampaignStorage.loadCampaigns();
+        final campaignIndex = updatedCampaigns.indexWhere((c) => c.id == widget.campaign.id);
+        if (campaignIndex != -1) {
+          updatedCampaigns[campaignIndex].photoIds.addAll(newPhotoIds);
+          await CampaignStorage.saveCampaigns(updatedCampaigns);
+        }
+
+        // Reload campaign photos
+        await _loadCampaignPhotos();
+
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully copied ${templatePhotos.length} template photos'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to copy template photos'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+
+    } catch (e) {
+      // Close loading dialog if still open
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error replicating campaign: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -413,17 +621,10 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                                 ),
                               ],
                             ),
-                            if (_isCampaignFromToday && _campaignPhotos.isEmpty) ...[
+                            if (_isCampaignFromToday && !_hasNonTemplatePhotos) ...[
                               const SizedBox(height: 16),
                               ElevatedButton.icon(
-                                onPressed: () {
-                                  // TODO: Implement replicate campaign functionality
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Replicate campaign functionality will be implemented'),
-                                    ),
-                                  );
-                                },
+                                onPressed: _replicateCampaign,
                                 icon: const Icon(Icons.copy),
                                 label: const Text('Replicate Campaign'),
                               ),
