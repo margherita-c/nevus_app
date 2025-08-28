@@ -2,7 +2,7 @@
 
 A comprehensive Flutter application designed to help people track and monitor their moles over time. The app allows users to take photos, identify individual moles, create a history of changes for each mole, and locate mole positions on a human figure for comprehensive tracking.
 
-## 🎯 Features
+## Features
 
 - **Photo Management**: Take and store photos in a private gallery accessible only through the app
 - **Mole Tracking**: Identify and track individual moles with detailed annotations
@@ -13,7 +13,7 @@ A comprehensive Flutter application designed to help people track and monitor th
 - **Export Functionality**: Export mole data and photos for medical consultations
 - **Metadata Extraction**: Automatic extraction of photo metadata including capture date
 
-## 🏗️ Architecture
+## Architecture
 
 ### Data Models
 
@@ -89,6 +89,7 @@ lib/
 Each user has a personal folder named after the user where all data is stored. When a user doesn't log in, the account will be managed as a guest user and the data will be stored in a folder named "guest". The image data inside each user folder is organized in campaign folders (all photos relative to one campaign are stored in the same campaign folder).
 All data is stored in JSON files that are loaded and saved when entering or exiting a screen. The JSON files are stored directly inside the user folder.
 
+```
 /app_documents/
 └── users/
     ├── guest/
@@ -107,6 +108,8 @@ All data is stored in JSON files that are loaded and saved when entering or exit
         └── campaigns/
             └── campaign_001/
             
+```
+
 ### Photo
 Photos are linked to only one campaign. Each image can contain more than one mole and has a list of spots that identify each mole and its position. Each photo contains a description that identifies which region of the body the picture represents.
 
@@ -122,34 +125,34 @@ Every mole has a unique ID, a short string that describes it, a long description
 ### User
 User accounts store personal information and preferences, with support for multiple accounts on the same device.
 
-## 📱 User Interface Screens
+## User Interface Screens
 
 ### Authentication Screen (auth_screen)
-From here you can access the app: there is a box where you need to insert your username and password and then a button to log in. If you don't have an account yet, there's a "plus" button in the top right corner of the screen. From here you'll get to another page where you can create your first account or another one.
+The authentication screen allows users to access the app by entering their username and password in the login form. Users without an account can tap the "plus" button in the top right corner to navigate to the account creation page where they can set up their first account or add additional ones.
 
 #### Add or Edit an Account
-Here you can create your first account or add a new one, but also modify an already existing account. As a matter of fact, the app lets you handle multiple accounts on the same device. Also, all the data given to Nevus is strictly kept inside the app, avoiding that your private information might get released to public platforms. You can access this page from the "plus" button in the log in screen, or from the menu, clicking "edit account". In this page you'll find a box that asks for some personal information, such as gender, age etc., but also for a username and password. At the end of the page there's a save/create button, depending on whether you are adding or modifying an account.
+This screen enables users to create their first account, add new accounts, or modify existing accounts. The app supports multiple user accounts on the same device, ensuring that all personal data remains strictly within the app without being shared with external platforms. Users can access this screen through the "plus" button on the login screen or by selecting "edit account" from the menu. The form requests personal information such as gender and age, along with username and password credentials. Users can save changes or create new accounts using the button at the bottom of the page.
 
 ### Home Screen (home_screen)
-Here you see an image of a human figure, where in the future you'll be able to place the pictures of your moles. In this way every user will be able to create an accessible map of their moles, which will surely help with tracking. Additionally, in the homepage there are two buttons: one to access the camera and one to access the gallery, where all the photos are stored. Here you can also find the most recent campaigns that have been created. To see all campaigns there's a specific button; with another button you can go to the mole list.
+The home screen displays a human figure where users will be able to position their mole photos in future updates. This feature will allow users to create a visual map of their moles, making tracking more intuitive and comprehensive. The screen also provides quick access to key features through two main buttons: one for the camera to take new photos and another for the gallery where all photos are stored. Users can view their most recent campaigns directly on this screen, with dedicated buttons to access the complete campaign list and mole list.
 
 ### Campaign List (campaigns_screen)
-Here you have a list of all the campaigns that have ever been created by a user.
+This screen presents users with a comprehensive list of all campaigns they have created throughout their use of the app.
 
 ### Camera Screen (camera_screen)
-On this page you can take pictures that will show up in the gallery. Once you shoot a photo, a message will appear saying: "Picture saved!", along with a button that will transfer you to the gallery screen. If an image can't be taken, another message will appear saying: "Error taking picture".
+The camera screen allows users to capture photos that will automatically appear in their gallery. After taking a photo, users receive a "Picture saved!" confirmation message along with a button to navigate directly to the gallery screen. If the app encounters an issue while capturing an image, users will see an "Error taking picture" message.
 
 ### Campaign Detail Screen (campaign_detail_screen)
-Here you will find all the images that were taken, unless they were deleted. You can click on the photos to see some info, like when the picture was taken and the name of the picture. By default, the images' names are all blank, but you can modify them by clicking on a button called: "Edit name".
+This screen displays all images from a specific campaign, excluding any that users have deleted. Users can tap on individual photos to view detailed information such as the capture date and photo name. While photo names are initially blank by default, users can customize them using the "Edit name" button.
 
 #### Single Photo Screen (single_photo_screen)
-Here you can see some information about a single photo, like the date when the picture was taken or all the annotations. On this page you can add and edit the spots that highlight the moles.
+The single photo screen provides users with detailed information about individual photos, including the capture date and all existing annotations. Users can add new spots or edit existing ones to highlight and track specific moles on this screen.
 
 ### Mole List Screen (mole_list_screen)
-Here are all the moles, with a representative image and key characteristic information used to distinguish one mole from another.
+This screen shows users all their tracked moles, displaying representative images alongside key characteristics that help distinguish one mole from another.
 
 ### Mole Detail Screen (mole_detail_screen)
-Here there's a focus on a single mole: on this page you can find all the information and annotations regarding a single mole.
+The mole detail screen focuses on a single mole, providing users with comprehensive information and all annotations related to that specific mole.
 
 ## 🔒 Privacy & Security
 
