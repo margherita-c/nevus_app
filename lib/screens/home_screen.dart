@@ -39,7 +39,7 @@ class HomeScreenState extends State<HomeScreen> {
     setState(() => _isLoading = true);
     final campaigns = await CampaignStorage.loadCampaigns();
     setState(() {
-      _campaigns = campaigns;
+      _campaigns = campaigns..sort((a, b) => b.date.compareTo(a.date)); // Sort by date, newest first
       _isLoading = false;
     });
   }
