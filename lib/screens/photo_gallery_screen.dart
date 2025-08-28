@@ -127,6 +127,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                           ),
                         );
                       },
+                      onCameraReturn: _loadImages, // Add refresh callback for gallery
                     );
                   },
                 ),

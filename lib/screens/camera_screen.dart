@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 //import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'dart:developer' as developer;
+import 'dart:io';
 import 'photo_gallery_screen.dart';
 import '../models/photo.dart';
 import '../storage/user_storage.dart'; // Changed from photo_storage
@@ -11,8 +12,9 @@ import '../models/campaign.dart'; // Import Campaign model
 
 class CameraScreen extends StatefulWidget {
   final String? campaignId; // Add campaign support
+  final Photo? templatePhoto; // Add template photo support
   
-  const CameraScreen({super.key, this.campaignId});
+  const CameraScreen({super.key, this.campaignId, this.templatePhoto});
 
   @override
   CameraScreenState createState() => CameraScreenState();
@@ -23,6 +25,7 @@ class CameraScreenState extends State<CameraScreen> {
   List<CameraDescription>? cameras;
   bool _isInitialized = false;
   Campaign? _campaign; // Add campaign state
+  bool _showTemplateOverlay = false; // State for template overlay visibility
 
   @override
   void initState() {
@@ -240,7 +243,135 @@ class CameraScreenState extends State<CameraScreen> {
           ),
         ],
       ),
-      body: CameraPreview(_controller!),
+      body: Stack(
+        children: [
+          // Camera preview (full screen)
+          Positioned.fill(
+            child: CameraPreview(_controller!),
+          ),
+          
+          // Template image overlay (full screen semi-transparent)
+          if (widget.templatePhoto != null && _showTemplateOverlay)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showTemplateOverlay = false;
+                  });
+                },
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: Center(
+                    child: FutureBuilder<bool>(
+                      future: File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}').exists(),
+                      builder: (context, snapshot) {
+                        if (snapshot.data == true) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}'),
+                                fit: BoxFit.contain,
+                                color: Colors.white.withOpacity(0.7),
+                                colorBlendMode: BlendMode.modulate,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          
+          // Template image thumbnail (small corner image)
+          if (widget.templatePhoto != null && !_showTemplateOverlay)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showTemplateOverlay = true;
+                  });
+                },
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 5,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: FutureBuilder<bool>(
+                          future: File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}').exists(),
+                          builder: (context, snapshot) {
+                            if (snapshot.data == true) {
+                              return Image.file(
+                                File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}'),
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                              );
+                            }
+                            return Container(
+                              width: 120,
+                              height: 120,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                            );
+                          },
+                        ),
+                      ),
+                      // Template indicator on thumbnail
+                      Positioned(
+                        bottom: 4,
+                        left: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Template',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _takePicture,
         tooltip: 'Take Picture',

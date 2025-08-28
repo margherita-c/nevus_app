@@ -660,6 +660,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                             ),
                           );
                         },
+                        onCameraReturn: _loadCampaignPhotos, // Add refresh callback
                       );
                     },
                   ),

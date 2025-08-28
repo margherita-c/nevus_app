@@ -3,15 +3,18 @@ import 'dart:io';
 import 'dart:developer' as developer;
 import '../models/photo.dart';
 import '../storage/user_storage.dart';
+import '../screens/camera_screen.dart';
 
 class PhotoGridItem extends StatelessWidget {
   final Photo photo;
   final VoidCallback onTap;
+  final VoidCallback? onCameraReturn; // Callback for when returning from camera
   
   const PhotoGridItem({
     super.key,
     required this.photo,
     required this.onTap,
+    this.onCameraReturn,
   });
 
   @override
@@ -20,7 +23,28 @@ class PhotoGridItem extends StatelessWidget {
     final imageFile = File(fullPath);
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        if (photo.isTemplate) {
+          // For template photos, open camera with template
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CameraScreen(
+                campaignId: photo.campaignId,
+                templatePhoto: photo,
+              ),
+            ),
+          ).then((_) {
+            // Call the callback when returning from camera
+            if (onCameraReturn != null) {
+              onCameraReturn!();
+            }
+          });
+        } else {
+          // For regular photos, use the normal callback
+          onTap();
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8.0),
