@@ -392,20 +392,22 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         if (confirm != true) return;
 
         // Show copying progress dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Copying template photos...'),
-              ],
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Copying template photos...'),
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
 
       // Ensure campaign directory exists

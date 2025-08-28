@@ -108,9 +108,53 @@ class CameraScreenState extends State<CameraScreen> {
       XFile picture = await _controller!.takePicture();
       await picture.saveTo(imagePath);
 
-      // Show dialog to get photo description
+      // If there's a template photo, show comparison dialog
+      if (widget.templatePhoto != null) {
+        developer.log('Showing photo comparison dialog', name: 'CameraScreen');
+        try {
+          final bool? acceptPhoto = await _showPhotoComparisonDialog(imagePath);
+          developer.log('Comparison dialog result: $acceptPhoto', name: 'CameraScreen');
+          
+          if (acceptPhoto == true) {
+            // User accepted the photo - replace template and exit
+            developer.log('User accepted photo, replacing template', name: 'CameraScreen');
+            await _replaceTemplateWithNewPhoto(imagePath);
+            if (mounted) {
+              Navigator.pop(context); // Exit camera screen
+            }
+            return;
+          } else {
+            // User rejected the photo - delete it and stay in camera
+            developer.log('User rejected photo, deleting and staying in camera', name: 'CameraScreen');
+            await File(imagePath).delete();
+            developer.log('Photo rejected and deleted', name: 'CameraScreen');
+            return;
+          }
+        } catch (e) {
+          developer.log('Error in photo comparison dialog: $e', name: 'CameraScreen');
+          // Clean up photo if error occurs
+          try {
+            await File(imagePath).delete();
+          } catch (deleteError) {
+            developer.log('Error deleting photo after dialog error: $deleteError', name: 'CameraScreen');
+          }
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error showing comparison dialog: $e')),
+            );
+          }
+          return;
+        }
+      }
+
+      // Original workflow for non-template photos
       String? description = await _showDescriptionDialog();
-      if (description == null) return; // User cancelled
+      if (description == null) {
+        // User cancelled - delete the photo
+        await File(imagePath).delete();
+        return;
+      }
 
       final newPhoto = Photo(
         id: 'photo_${DateTime.now().millisecondsSinceEpoch}',
@@ -125,7 +169,7 @@ class CameraScreenState extends State<CameraScreen> {
       photos.add(newPhoto);
       await UserStorage.savePhotos(photos);
 
-      // *** ADD THIS: Update campaign photoIds ***
+      // Update campaign photoIds
       if (widget.campaignId != null) {
         await _updateCampaignPhotoIds(widget.campaignId!, newPhoto.id);
       }
@@ -207,6 +251,133 @@ class CameraScreenState extends State<CameraScreen> {
     );
   }
 
+  Future<bool?> _showPhotoComparisonDialog(String newPhotoPath) async {
+    // Add mounted check before showing dialog
+    if (!mounted) return false;
+    
+    developer.log('Building simple comparison dialog', name: 'CameraScreen');
+    
+    try {
+      // Use a much simpler dialog without complex layouts
+      return await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Accept New Photo?'),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Photo taken successfully!'),
+              SizedBox(height: 16),
+              Text(
+                'Accept this photo? It will replace the template.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                developer.log('User chose to retake photo', name: 'CameraScreen');
+                Navigator.pop(context, false);
+              },
+              child: const Text('Retake'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                developer.log('User chose to accept photo', name: 'CameraScreen');
+                Navigator.pop(context, true);
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        ),
+      );
+    } catch (e, stackTrace) {
+      developer.log('Error showing dialog: $e', error: e, stackTrace: stackTrace, name: 'CameraScreen');
+      return true; // Default to accepting the photo if dialog fails
+    }
+  }
+
+  Future<void> _replaceTemplateWithNewPhoto(String newPhotoPath) async {
+    try {
+      developer.log('Starting template replacement process', name: 'CameraScreen');
+      
+      // Load all photos
+      final allPhotos = await UserStorage.loadPhotos();
+      developer.log('Loaded ${allPhotos.length} photos from storage', name: 'CameraScreen');
+      
+      // Find and remove the template photo
+      final templateIndex = allPhotos.indexWhere((photo) => photo.id == widget.templatePhoto!.id);
+      developer.log('Template photo index: $templateIndex', name: 'CameraScreen');
+      
+      if (templateIndex != -1) {
+        // Delete the template photo file
+        final templateFile = File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}');
+        developer.log('Template file path: ${templateFile.path}', name: 'CameraScreen');
+        
+        if (await templateFile.exists()) {
+          await templateFile.delete();
+          developer.log('Template file deleted successfully', name: 'CameraScreen');
+        } else {
+          developer.log('Template file not found for deletion', name: 'CameraScreen');
+        }
+        
+        // Remove template photo from list
+        allPhotos.removeAt(templateIndex);
+        developer.log('Template photo removed from photos list', name: 'CameraScreen');
+      }
+
+      // Create new photo object (non-template)
+      final newPhoto = Photo(
+        id: 'photo_${DateTime.now().millisecondsSinceEpoch}',
+        relativePath: UserStorage.getRelativePath(newPhotoPath),
+        dateTaken: DateTime.now(),
+        description: widget.templatePhoto!.description, // Use template's description
+        campaignId: widget.campaignId!,
+        isTemplate: false, // This is not a template
+      );
+      developer.log('Created new photo object: ${newPhoto.id}', name: 'CameraScreen');
+
+      // Add new photo to list
+      allPhotos.add(newPhoto);
+      await UserStorage.savePhotos(allPhotos);
+      developer.log('Saved photos to storage', name: 'CameraScreen');
+
+      // Update campaign photoIds - remove template and add new photo
+      final campaigns = await CampaignStorage.loadCampaigns();
+      final campaignIndex = campaigns.indexWhere((c) => c.id == widget.campaignId);
+      if (campaignIndex != -1) {
+        // Remove template photo ID
+        campaigns[campaignIndex].photoIds.remove(widget.templatePhoto!.id);
+        // Add new photo ID
+        campaigns[campaignIndex].photoIds.add(newPhoto.id);
+        await CampaignStorage.saveCampaigns(campaigns);
+      }
+
+      developer.log('Template replaced successfully with new photo', name: 'CameraScreen');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo accepted! Template replaced.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      developer.log('Error replacing template: $e', name: 'CameraScreen');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error replacing template: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _controller == null || !_controller!.value.isInitialized) {
@@ -260,7 +431,7 @@ class CameraScreenState extends State<CameraScreen> {
                   });
                 },
                 child: Container(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues (alpha: 0.3),
                   child: Center(
                     child: FutureBuilder<bool>(
                       future: File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}').exists(),
@@ -271,7 +442,7 @@ class CameraScreenState extends State<CameraScreen> {
                               borderRadius: BorderRadius.circular(8),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.5),
+                                  color: Colors.black.withValues (alpha: 0.5),
                                   blurRadius: 10,
                                   spreadRadius: 2,
                                 ),
@@ -282,7 +453,7 @@ class CameraScreenState extends State<CameraScreen> {
                               child: Image.file(
                                 File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}'),
                                 fit: BoxFit.contain,
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues (alpha: 0.7),
                                 colorBlendMode: BlendMode.modulate,
                               ),
                             ),
@@ -315,7 +486,7 @@ class CameraScreenState extends State<CameraScreen> {
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues (alpha: 0.3),
                         blurRadius: 5,
                         spreadRadius: 1,
                       ),
