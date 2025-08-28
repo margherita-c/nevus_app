@@ -264,16 +264,97 @@ class CameraScreenState extends State<CameraScreen> {
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text('Accept New Photo?'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Photo taken successfully!'),
-              SizedBox(height: 16),
-              Text(
-                'Accept this photo? It will replace the template.',
-                textAlign: TextAlign.center,
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Compare your new photo with the template:'),
+                const SizedBox(height: 16),
+                
+                // Simple side-by-side thumbnails
+                Row(
+                  children: [
+                    // Template thumbnail
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Template',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 80,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.blue, width: 1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: Image.file(
+                                File('${UserStorage.userDirectory}/${widget.templatePhoto!.relativePath}'),
+                                fit: BoxFit.cover,
+                                cacheWidth: 200, // Limit memory usage
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(Icons.image_not_supported, 
+                                               color: Colors.grey, size: 24),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    // New photo thumbnail
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Text(
+                            'New Photo',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 80,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.green, width: 1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: Image.file(
+                                File(newPhotoPath),
+                                fit: BoxFit.cover,
+                                cacheWidth: 200, // Limit memory usage
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(Icons.image_not_supported, 
+                                               color: Colors.grey, size: 24),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                const Text(
+                  'Accept this photo? It will replace the template.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
