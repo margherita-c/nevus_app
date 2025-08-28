@@ -1,4 +1,11 @@
 # Nevus App - Technical Documentation
+ _Margherita Cignoni_
+ ___
+
+## Introduction 
+The role of self-skin examination is considered very important for melanoma prevention, and many works reccomend to keep track in time of existing moles in time using photos [^1] [^2]
+[^1]: Goodson, Agnessa Gadeliya, and Douglas Grossman. "Strategies for early melanoma detection: Approaches to the patient with nevi." Journal of the American Academy of Dermatology 60.5 (2009): 719-735.
+[^2]: Weinstock, Martin A., et al. "Melanoma early detection with thorough skin self-examination: the “Check It Out” randomized trial." American Journal of Preventive Medicine 32.6 (2007): 517-524.
 
 A comprehensive Flutter application designed to help people track and monitor their moles over time. The app allows users to take photos, identify individual moles, create a history of changes for each mole, and locate mole positions on a human figure for comprehensive tracking.
 
@@ -65,7 +72,7 @@ lib/
     └── spot_widget.dart
 ```
 
-## 🛠️ Technical Stack
+## Technical Stack
 
 - **Framework**: Flutter 3.8.1+
 - **Language**: Dart
@@ -130,7 +137,7 @@ User accounts store personal information and preferences, with support for multi
 ### Authentication Screen (auth_screen)
 The authentication screen allows users to access the app by entering their username and password in the login form. Users without an account can tap the "plus" button in the top right corner to navigate to the account creation page where they can set up their first account or add additional ones.
 
-#### Add or Edit an Account
+#### Edit an Account (edit_account_screen)
 This screen enables users to create their first account, add new accounts, or modify existing accounts. The app supports multiple user accounts on the same device, ensuring that all personal data remains strictly within the app without being shared with external platforms. Users can access this screen through the "plus" button on the login screen or by selecting "edit account" from the menu. The form requests personal information such as gender and age, along with username and password credentials. Users can save changes or create new accounts using the button at the bottom of the page.
 
 ### Home Screen (home_screen)
@@ -154,15 +161,14 @@ This screen shows users all their tracked moles, displaying representative image
 ### Mole Detail Screen (mole_detail_screen)
 The mole detail screen focuses on a single mole, providing users with comprehensive information and all annotations related to that specific mole.
 
-## 🔒 Privacy & Security
+## Privacy & Security
 
 - All data is stored locally on the device
 - No cloud storage or external data transmission
 - Private photo gallery separate from device's main photo library
-- User account data encrypted and stored securely
 - Support for guest accounts for anonymous usage
 
-## 📊 Data Organization
+## Data Organization
 
 ```
 /app_documents/
@@ -184,7 +190,7 @@ The mole detail screen focuses on a single mole, providing users with comprehens
             └── campaign_001/
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -206,7 +212,7 @@ The mole detail screen focuses on a single mole, providing users with comprehens
 - **iOS**: `flutter build ios`
 - **Other platforms**: See Flutter documentation for specific build commands
 
-## ⚠️ Medical Disclaimer
+## Medical Disclaimer
 
 This application is designed for tracking and documentation purposes only. It does not provide medical diagnosis or replace professional medical advice. Users should:
 
@@ -214,7 +220,3 @@ This application is designed for tracking and documentation purposes only. It do
 - Follow dermatologist recommendations for mole monitoring
 - Use this app as a supplementary tool, not a medical device
 - Seek immediate medical attention for concerning changes in moles
-
-## 🤝 Contributing
-
-This is a personal project for mole tracking and monitoring. For questions or suggestions, please refer to the documentation or contact the maintainer.
