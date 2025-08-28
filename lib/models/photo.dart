@@ -42,6 +42,12 @@ class Photo {
   /// - Sorting photos chronologically
   /// - Tracking mole changes over time
   final DateTime dateTaken;
+
+  /// Indicates whether this photo is a template for future photos.
+  /// If true, this photo can be used as a starting point for a new photo of the same body part.
+  /// It's used as a reference for creating consistent follow-up photos,
+  /// when creating a new campaign based on an older one.
+  final bool isTemplate;
   
   /// Description of which body region this photo represents.
   /// 
@@ -72,6 +78,7 @@ class Photo {
     required this.id,
     required this.relativePath,
     required this.dateTaken,
+    this.isTemplate = false,
     required this.description,
     required this.campaignId,
     List<Spot>? spots,
@@ -88,6 +95,7 @@ class Photo {
     'id': id,
     'relativePath': relativePath,
     'dateTaken': dateTaken.toIso8601String(),
+    'isTemplate': isTemplate,
     'description': description,
     'campaignId': campaignId,
     'spots': spots.map((s) => s.toJson()).toList(),
@@ -105,6 +113,7 @@ class Photo {
     id: json['id'],
     relativePath: json['relativePath'],
     dateTaken: DateTime.parse(json['dateTaken']),
+    isTemplate: json['isTemplate'] ?? false,
     description: json['description'] ?? '',
     campaignId: json['campaignId'] ?? '',
     spots: (json['spots'] as List<dynamic>?)
