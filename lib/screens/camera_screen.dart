@@ -6,6 +6,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 import 'photo_gallery_screen.dart';
 import '../models/photo.dart';
+import '../models/spot.dart'; // Add import for Spot model
 import '../storage/user_storage.dart'; // Changed from photo_storage
 import '../storage/campaign_storage.dart'; // Import CampaignStorage
 import '../models/campaign.dart'; // Import Campaign model
@@ -409,7 +410,7 @@ class CameraScreenState extends State<CameraScreen> {
         developer.log('Template photo removed from photos list', name: 'CameraScreen');
       }
 
-      // Create new photo object (non-template)
+      // Create new photo object (non-template) with preserved spots from template
       final newPhoto = Photo(
         id: 'photo_${DateTime.now().millisecondsSinceEpoch}',
         relativePath: UserStorage.getRelativePath(newPhotoPath),
@@ -417,6 +418,11 @@ class CameraScreenState extends State<CameraScreen> {
         description: widget.templatePhoto!.description, // Use template's description
         campaignId: widget.campaignId!,
         isTemplate: false, // This is not a template
+        spots: widget.templatePhoto!.spots.map((spot) => Spot(
+          position: spot.position,
+          radius: spot.radius,
+          moleId: spot.moleId,
+        )).toList(), // Create deep copies of spots from template
       );
       developer.log('Created new photo object: ${newPhoto.id}', name: 'CameraScreen');
 

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import '../models/campaign.dart';
 import '../models/photo.dart';
+import '../models/spot.dart'; // Add import for Spot model
 import '../models/mole.dart';
 import '../storage/user_storage.dart';
 import '../storage/campaign_storage.dart';
@@ -436,7 +437,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         // Copy the image file
         await originalFile.copy(destinationPath);
 
-        // Create template photo object
+        // Create template photo object with preserved spots
         final templatePhoto = Photo(
           id: 'template_photo_${timestamp}_$i',
           relativePath: UserStorage.getRelativePath(destinationPath),
@@ -444,7 +445,11 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
           description: originalPhoto.description, // Keep same description
           campaignId: widget.campaign.id,
           isTemplate: true, // Mark as template
-          spots: [], // Templates start with no spots
+          spots: originalPhoto.spots.map((spot) => Spot(
+            position: spot.position,
+            radius: spot.radius,
+            moleId: spot.moleId,
+          )).toList(), // Create deep copies of spots from original photo
         );
 
         templatePhotos.add(templatePhoto);

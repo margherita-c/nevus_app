@@ -3,7 +3,7 @@
  ___
 
 ## Introduction 
-The role of self-skin examination is considered very important for melanoma prevention, and many works reccomend to keep track in time of existing moles in time using photos [^1] [^2]
+The role of self-skin examination is considered very important for melanoma prevention, and many works reccomend to keep track in time of existing moles in time using photos [^1] [^2]. Keeping track of moles is truly important, and it plays an important role in preventing beningn or harmless moles to become dangerous. If one's able to check on moles frequently, once a year or so, it becomes easier to detect changes, that often are signal of a shift of a mole capacity to cause harm.
 [^1]: Goodson, Agnessa Gadeliya, and Douglas Grossman. "Strategies for early melanoma detection: Approaches to the patient with nevi." Journal of the American Academy of Dermatology 60.5 (2009): 719-735.
 [^2]: Weinstock, Martin A., et al. "Melanoma early detection with thorough skin self-examination: the “Check It Out” randomized trial." American Journal of Preventive Medicine 32.6 (2007): 517-524.
 
