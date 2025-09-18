@@ -7,6 +7,7 @@ import '../utils/dialog_utils.dart';
 import '../screens/campaign_detail_screen.dart';
 import '../services/photo_metadata_service.dart';
 import 'dart:io';
+import 'package:path/path.dart' as path;
 import 'dart:developer' as developer;
 
 class CampaignService {
@@ -59,8 +60,9 @@ class CampaignService {
   }
 
   static Future<int> getActualPhotoCount(String campaignId) async {
-    final allPhotos = await UserStorage.loadPhotos();
-    return allPhotos.where((photo) => photo.campaignId == campaignId).length;
+    final campaign = await CampaignStorage.getCampaignById(campaignId);
+    if (campaign == null) return 0;
+    return campaign.photoIds.length;
   }
 
   static Future<Campaign> createCampaignFromImport(DateTime date, List<File> imageFiles) async {
@@ -90,12 +92,27 @@ class CampaignService {
   
   for (int i = 0; i < imageFiles.length; i++) {
     final sourceFile = imageFiles[i];
+    final originalBasename = sourceFile.uri.pathSegments.last; // e.g. IMG_1234.jpg
+    final originalNameWithoutExt = originalBasename.contains('.')
+        ? originalBasename.substring(0, originalBasename.lastIndexOf('.'))
+        : originalBasename;
     final extension = sourceFile.path.split('.').last;
+
+    // Ensure a unique target filename in the campaign directory by appending a suffix if needed
+    String candidateName = originalBasename;
+    int suffix = 1;
+    File targetFile = File(path.join(campaignDir, candidateName));
+    while (await targetFile.exists()) {
+      final nameWithoutExt = originalNameWithoutExt;
+      candidateName = '${nameWithoutExt}_$suffix.$extension';
+      targetFile = File(path.join(campaignDir, candidateName));
+      suffix++;
+    }
+
     final photoId = 'photo_${date.millisecondsSinceEpoch}_$i';
-    final targetFile = File('$campaignDir/$photoId.$extension');
-    
-    developer.log('Processing photo ${i + 1}/${imageFiles.length}: $photoId', name: 'CampaignService');
-    
+
+    developer.log('Processing photo ${i + 1}/${imageFiles.length}: $candidateName', name: 'CampaignService');
+
     await targetFile.create(recursive: true);
     await sourceFile.copy(targetFile.path);
     developer.log('Photo copied to: ${targetFile.path}', name: 'CampaignService');
@@ -104,13 +121,17 @@ class CampaignService {
     final photoCaptureDate = await PhotoMetadataService.getPhotoCaptureDate(sourceFile) ?? date;
     developer.log('Photo capture date: $photoCaptureDate', name: 'CampaignService');
     
-    // Create Photo object and add to storage
+    // Create Photo object and add to storage. Use the original filename (without extension)
+    // as the default description when available.
+    final defaultDescription = originalNameWithoutExt.isNotEmpty
+        ? originalNameWithoutExt
+        : 'Imported photo ${i + 1}';
+
     final photo = Photo(
       id: photoId,
       relativePath: UserStorage.getRelativePath(targetFile.path),
       dateTaken: photoCaptureDate,
-      description: 'Imported photo ${i + 1}',
-      campaignId: campaign.id,
+      description: defaultDescription,
     );
     
     // Add photo to photos storage

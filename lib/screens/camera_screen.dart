@@ -162,7 +162,6 @@ class CameraScreenState extends State<CameraScreen> {
         relativePath: UserStorage.getRelativePath(imagePath),
         dateTaken: DateTime.now(),
         description: description,
-        campaignId: widget.campaignId ?? 'default_campaign',
       );
 
       // Load, add, and save photo using UserStorage
@@ -416,7 +415,6 @@ class CameraScreenState extends State<CameraScreen> {
         relativePath: UserStorage.getRelativePath(newPhotoPath),
         dateTaken: DateTime.now(),
         description: widget.templatePhoto!.description, // Use template's description
-        campaignId: widget.campaignId!,
         isTemplate: false, // This is not a template
         spots: widget.templatePhoto!.spots.map((spot) => Spot(
           position: spot.position,

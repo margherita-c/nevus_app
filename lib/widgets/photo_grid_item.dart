@@ -7,6 +7,7 @@ import '../screens/camera_screen.dart';
 
 class PhotoGridItem extends StatelessWidget {
   final Photo photo;
+  final String? campaignId; // Optional campaign id for this photo
   final VoidCallback onTap;
   final VoidCallback? onCameraReturn; // Callback for when returning from camera
   
@@ -15,6 +16,7 @@ class PhotoGridItem extends StatelessWidget {
     required this.photo,
     required this.onTap,
     this.onCameraReturn,
+    this.campaignId,
   });
 
   @override
@@ -24,13 +26,13 @@ class PhotoGridItem extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        if (photo.isTemplate) {
+            if (photo.isTemplate) {
           // For template photos, open camera with template
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => CameraScreen(
-                campaignId: photo.campaignId,
+                    campaignId: campaignId,
                 templatePhoto: photo,
               ),
             ),

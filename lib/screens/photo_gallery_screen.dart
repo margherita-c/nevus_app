@@ -47,7 +47,6 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
         relativePath: _imageFiles[index].relativePath,
         dateTaken: _imageFiles[index].dateTaken,
         description: newDescription,
-        campaignId: _imageFiles[index].campaignId,
         spots: _imageFiles[index].spots,
       );
     });

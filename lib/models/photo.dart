@@ -55,11 +55,8 @@ class Photo {
   /// This helps users organize and identify photos by body location.
   final String description;
   
-  /// ID of the campaign this photo belongs to.
-  /// 
-  /// Links this photo to a specific tracking session/campaign.
-  /// Used for organizing photos by date and tracking sessions.
-  final String campaignId;
+  /// NOTE: Campaign association is stored in the `Campaign.photoIds` list.
+  /// The `Photo` model no longer stores `campaignId` to avoid duplicated state.
   
   /// List of spots marked on this photo.
   /// 
@@ -79,8 +76,7 @@ class Photo {
     required this.relativePath,
     required this.dateTaken,
     this.isTemplate = false,
-    required this.description,
-    required this.campaignId,
+  required this.description,
     List<Spot>? spots,
   }) : spots = spots ?? [];
 
@@ -97,7 +93,6 @@ class Photo {
     'dateTaken': dateTaken.toIso8601String(),
     'isTemplate': isTemplate,
     'description': description,
-    'campaignId': campaignId,
     'spots': spots.map((s) => s.toJson()).toList(),
   };
 
@@ -115,7 +110,7 @@ class Photo {
     dateTaken: DateTime.parse(json['dateTaken']),
     isTemplate: json['isTemplate'] ?? false,
     description: json['description'] ?? '',
-    campaignId: json['campaignId'] ?? '',
+    // Older JSON files may still contain a campaignId field; we ignore it
     spots: (json['spots'] as List<dynamic>?)
         ?.map((s) => Spot.fromJson(s))
         .toList() ?? [],

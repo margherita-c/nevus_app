@@ -51,8 +51,10 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     setState(() => _isLoading = true);
     
     // Load all photos and filter by campaign ID
-    final allPhotos = await UserStorage.loadPhotos();
-    final campaignPhotos = allPhotos.where((photo) => photo.campaignId == widget.campaign.id).toList();
+  final allPhotos = await UserStorage.loadPhotos();
+  // Use campaign's photoIds to determine which photos belong to this campaign
+  final campaignPhotoIds = widget.campaign.photoIds;
+  final campaignPhotos = allPhotos.where((photo) => campaignPhotoIds.contains(photo.id)).toList();
     final allMoles = await UserStorage.loadMoles();
 
     setState(() {
@@ -98,18 +100,29 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
 
       for (int i = 0; i < images.length; i++) {
         final image = images[i];
-        
-        // Create unique filename
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+        // Preserve original filename and ensure unique filename in campaign dir
+        final originalBasename = image.name; // XFile exposes name property
+        final originalNameWithoutExt = originalBasename.contains('.')
+            ? originalBasename.substring(0, originalBasename.lastIndexOf('.'))
+            : originalBasename;
         final extension = path.extension(image.path);
-        final fileName = 'imported_${timestamp}_$i$extension';
-        final destinationPath = path.join(campaignDir, fileName);
+
+        String candidateName = originalBasename;
+        int suffix = 1;
+        String destinationPath = path.join(campaignDir, candidateName);
+        while (await File(destinationPath).exists()) {
+          final nameWithoutExt = originalNameWithoutExt;
+          candidateName = '${nameWithoutExt}_$suffix$extension';
+          destinationPath = path.join(campaignDir, candidateName);
+          suffix++;
+        }
 
         // Copy image to campaign directory
         final File sourceFile = File(image.path);
         await sourceFile.copy(destinationPath);
 
-        // Get description for this photo
+        // Get description for this photo (allow user override). If left empty, use filename.
         String? description;
         if (mounted) {
           Navigator.pop(context); // Close loading dialog
@@ -139,12 +152,14 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         }
 
         // Create Photo object
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
         final newPhoto = Photo(
           id: 'imported_photo_${timestamp}_$i',
           relativePath: UserStorage.getRelativePath(destinationPath),
           dateTaken: DateTime.now(), // Use import time as date taken
-          description: description ?? 'Imported photo',
-          campaignId: widget.campaign.id,
+          description: (description != null && description.isNotEmpty)
+              ? description
+              : originalNameWithoutExt,
         );
 
         newPhotos.add(newPhoto);
@@ -257,8 +272,9 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     if (confirm == true) {
       // Delete all photos from this campaign
       final allPhotos = await UserStorage.loadPhotos();
-      final remainingPhotos = allPhotos.where((photo) => photo.campaignId != widget.campaign.id).toList();
-      await UserStorage.savePhotos(remainingPhotos);
+  // Remove photos belonging to this campaign by using campaign.photoIds
+  final remainingPhotos = allPhotos.where((photo) => !widget.campaign.photoIds.contains(photo.id)).toList();
+  await UserStorage.savePhotos(remainingPhotos);
       
       // Delete the campaign
       await CampaignStorage.deleteCampaign(widget.campaign.id);
@@ -276,7 +292,6 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       relativePath: photo.relativePath,
       dateTaken: photo.dateTaken,
       description: newDescription,
-      campaignId: photo.campaignId,
       spots: photo.spots,
     );
 
@@ -298,6 +313,14 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     allPhotos.removeWhere((p) => p.id == photo.id);
     await UserStorage.savePhotos(allPhotos);
     
+    // Also remove photo id from the campaign's photoIds and save campaigns
+    final campaigns = await CampaignStorage.loadCampaigns();
+    final campaignIndex = campaigns.indexWhere((c) => c.id == widget.campaign.id);
+    if (campaignIndex != -1) {
+      campaigns[campaignIndex].photoIds.remove(photo.id);
+      await CampaignStorage.saveCampaigns(campaigns);
+    }
+
     await _loadCampaignPhotos();
   }
 
@@ -348,9 +371,9 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
 
       // Load all photos and get photos from the latest campaign
       final allPhotos = await UserStorage.loadPhotos();
-      final latestCampaignPhotos = allPhotos
-          .where((photo) => photo.campaignId == latestCampaign!.id)
-          .toList();
+    final latestCampaignPhotos = allPhotos
+      .where((photo) => latestCampaign!.photoIds.contains(photo.id))
+      .toList();
 
       if (latestCampaignPhotos.isEmpty) {
         if (mounted) {
@@ -428,7 +451,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
           continue; // Skip if original file doesn't exist
         }
 
-        // Create unique filename for template
+  // Create unique filename for template
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final extension = path.extension(originalPhoto.relativePath);
         final fileName = 'template_${timestamp}_$i$extension';
@@ -443,7 +466,6 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
           relativePath: UserStorage.getRelativePath(destinationPath),
           dateTaken: DateTime.now(), // Use current time for template creation
           description: originalPhoto.description, // Keep same description
-          campaignId: widget.campaign.id,
           isTemplate: true, // Mark as template
           spots: originalPhoto.spots.map((spot) => Spot(
             position: spot.position,
@@ -456,12 +478,12 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         newPhotoIds.add(templatePhoto.id);
       }
 
-      if (templatePhotos.isNotEmpty) {
+        if (templatePhotos.isNotEmpty) {
         // Add template photos to storage
         allPhotos.addAll(templatePhotos);
         await UserStorage.savePhotos(allPhotos);
 
-        // Update campaign photoIds
+        // Update campaign photoIds by adding the new template photo IDs
         final updatedCampaigns = await CampaignStorage.loadCampaigns();
         final campaignIndex = updatedCampaigns.indexWhere((c) => c.id == widget.campaign.id);
         if (campaignIndex != -1) {
@@ -653,6 +675,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                       final photo = _campaignPhotos[index];
                       return PhotoGridItem(
                         photo: photo,
+                        campaignId: widget.campaign.id,
                         onTap: () {
                           Navigator.push(
                             context,

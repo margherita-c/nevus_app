@@ -11,7 +11,6 @@ void main() {
         relativePath: 'test/path.jpg',
         dateTaken: DateTime.now(),
         description: 'Test photo',
-        campaignId: 'test_campaign',
         spots: [
           Spot(position: const Offset(100, 150), radius: 25.0, moleId: 'mole_1'),
           Spot(position: const Offset(200, 250), radius: 30.0, moleId: 'mole_2'),
@@ -24,7 +23,6 @@ void main() {
         relativePath: 'template/path.jpg',
         dateTaken: DateTime.now(),
         description: originalPhoto.description,
-        campaignId: 'new_campaign',
         isTemplate: true,
         spots: originalPhoto.spots.map((spot) => Spot(
           position: spot.position,
@@ -48,7 +46,6 @@ void main() {
         relativePath: 'template/path.jpg',
         dateTaken: DateTime.now(),
         description: 'Template photo',
-        campaignId: 'test_campaign',
         isTemplate: true,
         spots: [
           Spot(position: const Offset(120, 180), radius: 35.0, moleId: 'template_mole_1'),
@@ -62,7 +59,6 @@ void main() {
         relativePath: 'new/path.jpg',
         dateTaken: DateTime.now(),
         description: templatePhoto.description,
-        campaignId: templatePhoto.campaignId,
         isTemplate: false,
         spots: templatePhoto.spots.map((spot) => Spot(
           position: spot.position,
@@ -94,7 +90,6 @@ void main() {
         relativePath: 'path.jpg',
         dateTaken: DateTime.now(),
         description: 'Test',
-        campaignId: 'test',
         spots: [originalSpot],
       );
 
@@ -104,7 +99,6 @@ void main() {
         relativePath: 'new_path.jpg',
         dateTaken: DateTime.now(),
         description: 'Copied',
-        campaignId: 'test',
         spots: originalPhoto.spots.map((spot) => Spot(
           position: spot.position,
           radius: spot.radius,
