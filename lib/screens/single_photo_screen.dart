@@ -31,8 +31,21 @@ class SinglePhotoScreen extends StatefulWidget {
 class SinglePhotoScreenState extends State<SinglePhotoScreen> {
   bool markMode = false;
   int? selectedSpotIndex;
+  List<Mole> _moles = [];
   MarkAction markAction = MarkAction.none;
   final TransformationController _transformationController = TransformationController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Start with the provided moles, then try to refresh from storage
+    _moles = widget.moles;
+    UserStorage.loadMoles().then((loaded) {
+      if (mounted && loaded.isNotEmpty) {
+        setState(() => _moles = loaded);
+      }
+    }).catchError((_) {});
+  }
 
   Future<void> _savePhotoChanges() async {
     try {
@@ -96,6 +109,16 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
         markAction = MarkAction.none;
       });
       
+      // If a new mole was just created, reload moles so the UI shows its name immediately
+      try {
+        final latestMoles = await UserStorage.loadMoles();
+        if (mounted) {
+          setState(() {
+            _moles = latestMoles;
+          });
+        }
+      } catch (_) {}
+
       await _savePhotoChanges();
       
       if (mounted) {
@@ -183,6 +206,11 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
     
     if (newMoleId != null && newMoleId.isNotEmpty && newMoleId != widget.photo.spots[index].moleId) {
       _handleEditSpotMoleId(index, newMoleId);
+      // If user created a new mole in this flow, refresh local mole list so names appear
+      try {
+        final latestMoles = await UserStorage.loadMoles();
+        if (mounted) setState(() => _moles = latestMoles);
+      } catch (_) {}
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Mole ID updated!')),
@@ -238,7 +266,7 @@ class SinglePhotoScreenState extends State<SinglePhotoScreen> {
           Positioned.fill(
             child: InteractivePhotoViewer(
               photo: widget.photo,
-              moles: widget.moles,
+              moles: _moles.isNotEmpty ? _moles : widget.moles,
               isMarkMode: markMode,
               markAction: markAction,
               selectedSpotIndex: selectedSpotIndex,
