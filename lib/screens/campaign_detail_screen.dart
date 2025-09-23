@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import '../models/campaign.dart';
 import '../models/photo.dart';
@@ -26,11 +27,13 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
   List<Mole> _moles = [];
   bool _isLoading = true;
   final ImagePicker _picker = ImagePicker();
+  bool _isProcessingDialogShown = false;
+  late Campaign _campaign;
 
   /// Check if the campaign is from today's date
   bool get _isCampaignFromToday {
     final now = DateTime.now();
-    final campaignDate = widget.campaign.date;
+    final campaignDate = _campaign.date;
     return campaignDate.year == now.year &&
            campaignDate.month == now.month &&
            campaignDate.day == now.day;
@@ -44,6 +47,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _campaign = widget.campaign;
     _loadCampaignPhotos();
   }
 
@@ -51,10 +55,16 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     setState(() => _isLoading = true);
     
     // Load all photos and filter by campaign ID
-  final allPhotos = await UserStorage.loadPhotos();
-  // Use campaign's photoIds to determine which photos belong to this campaign
-  final campaignPhotoIds = widget.campaign.photoIds;
-  final campaignPhotos = allPhotos.where((photo) => campaignPhotoIds.contains(photo.id)).toList();
+    final allPhotos = await UserStorage.loadPhotos();
+    // Reload campaigns to get updated photoIds
+    final allCampaigns = await CampaignStorage.loadCampaigns();
+    final updatedCampaign = allCampaigns.firstWhere(
+      (c) => c.id == _campaign.id,
+      orElse: () => _campaign, // Fallback to current if not found
+    );
+    _campaign = updatedCampaign; // Update local copy
+    final campaignPhotoIds = _campaign.photoIds;
+    final campaignPhotos = allPhotos.where((photo) => campaignPhotoIds.contains(photo.id)).toList();
     final allMoles = await UserStorage.loadMoles();
 
     setState(() {
@@ -74,26 +84,11 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       if (images.isEmpty) return;
 
       // Show loading dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Importing photos...'),
-              ],
-            ),
-          ),
-        );
-      }
+      _showProcessingDialog('Importing photos...');
 
       // Ensure campaign directory exists
-      await UserStorage.ensureCampaignDirectoryExists(widget.campaign.id);
-      final campaignDir = await UserStorage.getCampaignDirectory(widget.campaign.id);
+      await UserStorage.ensureCampaignDirectoryExists(_campaign.id);
+      final campaignDir = await UserStorage.getCampaignDirectory(_campaign.id);
 
       List<Photo> newPhotos = [];
       List<String> newPhotoIds = [];
@@ -119,13 +114,16 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         }
 
         // Copy image to campaign directory
-        final File sourceFile = File(image.path);
-        await sourceFile.copy(destinationPath);
+          final bool copied = await _copyFileInBackground(image.path, destinationPath);
+          if (!copied) {
+            // Skip this file if copy failed
+            continue;
+          }
 
         // Get description for this photo (allow user override). If left empty, use filename.
         String? description;
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
+          _closeProcessingDialog(); // Close loading dialog
           description = await _showDescriptionDialog(i + 1, images.length);
           if (description == null) {
             // User cancelled, clean up and stop
@@ -134,20 +132,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
           }
           // Show loading dialog again if more photos to process
           if (mounted && i < images.length - 1) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => AlertDialog(
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Importing photos... (${i + 2}/${images.length})'),
-                  ],
-                ),
-              ),
-            );
+            _showProcessingDialog('Importing photos... (${i + 2}/${images.length})');
           }
         }
 
@@ -174,7 +159,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
 
         // Update campaign photoIds
         final campaigns = await CampaignStorage.loadCampaigns();
-        final campaignIndex = campaigns.indexWhere((c) => c.id == widget.campaign.id);
+        final campaignIndex = campaigns.indexWhere((c) => c.id == _campaign.id);
         if (campaignIndex != -1) {
           campaigns[campaignIndex].photoIds.addAll(newPhotoIds);
           await CampaignStorage.saveCampaigns(campaigns);
@@ -194,15 +179,10 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       }
 
       // Close loading dialog if still open
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
+      _closeProcessingDialog();
 
     } catch (e) {
-      // Close loading dialog if still open
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
+      _closeProcessingDialog();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -214,6 +194,31 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       }
     }
   }
+
+// Runs in the main isolate, delegates the actual file copy to a background isolate
+Future<bool> _copyFileInBackground(String src, String dst) async {
+  try {
+    final result = await compute(_copyFileTask, {'src': src, 'dst': dst});
+    return result == true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Top-level function executed inside a background isolate by `compute`.
+// Uses synchronous file operations inside the isolate to avoid async overhead there.
+bool _copyFileTask(Map<String, String> args) {
+  final src = args['src']!;
+  final dst = args['dst']!;
+  try {
+    final File source = File(src);
+    if (!source.existsSync()) return false;
+    source.copySync(dst);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
   Future<String?> _showDescriptionDialog(int currentPhoto, int totalPhotos) async {
     final controller = TextEditingController();
@@ -273,11 +278,11 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       // Delete all photos from this campaign
       final allPhotos = await UserStorage.loadPhotos();
   // Remove photos belonging to this campaign by using campaign.photoIds
-  final remainingPhotos = allPhotos.where((photo) => !widget.campaign.photoIds.contains(photo.id)).toList();
+  final remainingPhotos = allPhotos.where((photo) => !_campaign.photoIds.contains(photo.id)).toList();
   await UserStorage.savePhotos(remainingPhotos);
       
       // Delete the campaign
-      await CampaignStorage.deleteCampaign(widget.campaign.id);
+      await CampaignStorage.deleteCampaign(_campaign.id);
       
       if (mounted) {
         Navigator.pop(context);
@@ -315,7 +320,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     
     // Also remove photo id from the campaign's photoIds and save campaigns
     final campaigns = await CampaignStorage.loadCampaigns();
-    final campaignIndex = campaigns.indexWhere((c) => c.id == widget.campaign.id);
+    final campaignIndex = campaigns.indexWhere((c) => c.id == _campaign.id);
     if (campaignIndex != -1) {
       campaigns[campaignIndex].photoIds.remove(photo.id);
       await CampaignStorage.saveCampaigns(campaigns);
@@ -327,22 +332,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
   Future<void> _replicateCampaign() async {
     try {
       // Show loading dialog
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Finding latest campaign...'),
-              ],
-            ),
-          ),
-        );
-      }
+      _showProcessingDialog('Finding latest campaign...');
 
       // Load all campaigns and find the latest one (excluding current)
       final campaigns = await CampaignStorage.loadCampaigns();
@@ -350,7 +340,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       
       Campaign? latestCampaign;
       for (final campaign in campaigns) {
-        if (campaign.id != widget.campaign.id && campaign.photoIds.isNotEmpty) {
+        if (campaign.id != _campaign.id && campaign.photoIds.isNotEmpty) {
           latestCampaign = campaign;
           break;
         }
@@ -389,7 +379,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       }
 
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        _closeProcessingDialog(); // Close loading dialog
         // Show confirmation dialog
         final confirm = await showDialog<bool>(
           context: context,
@@ -416,27 +406,12 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         if (confirm != true) return;
 
         // Show copying progress dialog
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const AlertDialog(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Copying template photos...'),
-                ],
-              ),
-            ),
-          );
-        }
+        _showProcessingDialog('Copying template photos...');
       }
 
       // Ensure campaign directory exists
-      await UserStorage.ensureCampaignDirectoryExists(widget.campaign.id);
-      final campaignDir = await UserStorage.getCampaignDirectory(widget.campaign.id);
+      await UserStorage.ensureCampaignDirectoryExists(_campaign.id);
+      final campaignDir = await UserStorage.getCampaignDirectory(_campaign.id);
 
       List<Photo> templatePhotos = [];
       List<String> newPhotoIds = [];
@@ -485,7 +460,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
 
         // Update campaign photoIds by adding the new template photo IDs
         final updatedCampaigns = await CampaignStorage.loadCampaigns();
-        final campaignIndex = updatedCampaigns.indexWhere((c) => c.id == widget.campaign.id);
+        final campaignIndex = updatedCampaigns.indexWhere((c) => c.id == _campaign.id);
         if (campaignIndex != -1) {
           updatedCampaigns[campaignIndex].photoIds.addAll(newPhotoIds);
           await CampaignStorage.saveCampaigns(updatedCampaigns);
@@ -495,7 +470,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         await _loadCampaignPhotos();
 
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
+          _closeProcessingDialog(); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Successfully copied ${templatePhotos.length} template photos'),
@@ -505,7 +480,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
         }
       } else {
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
+          _closeProcessingDialog(); // Close loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Failed to copy template photos'),
@@ -516,12 +491,10 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       }
 
     } catch (e) {
-      // Close loading dialog if still open
-      if (mounted && Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
+      _closeProcessingDialog();
       
       if (mounted) {
+        _closeProcessingDialog();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error replicating campaign: $e'),
@@ -532,11 +505,40 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     }
   }
 
+  void _showProcessingDialog(String message) {
+    if (!mounted || _isProcessingDialogShown) return;
+    _isProcessingDialogShown = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(message),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _closeProcessingDialog() {
+    if (!_isProcessingDialogShown) return;
+    if (mounted && Navigator.canPop(context)) {
+      try {
+        Navigator.pop(context);
+      } catch (_) {}
+    }
+    _isProcessingDialogShown = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Campaign ${widget.campaign.date.day}/${widget.campaign.date.month}/${widget.campaign.date.year}'),
+        title: Text('Campaign ${_campaign.date.day}/${_campaign.date.month}/${_campaign.date.year}'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           if (_isCampaignFromToday)
@@ -546,7 +548,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+                    builder: (context) => CameraScreen(campaignId: _campaign.id),
                   ),
                 ).then((_) => _loadCampaignPhotos());
               },
@@ -593,8 +595,8 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                Text('Date: ${widget.campaign.date.day}/${widget.campaign.date.month}/${widget.campaign.date.year}'),
-                Text('Time: ${widget.campaign.date.hour}:${widget.campaign.date.minute.toString().padLeft(2, '0')}'),
+                Text('Date: ${_campaign.date.day}/${_campaign.date.month}/${_campaign.date.year}'),
+                Text('Time: ${_campaign.date.hour}:${_campaign.date.minute.toString().padLeft(2, '0')}'),
                 Text('Photos: ${_campaignPhotos.length}'),
               ],
             ),
@@ -635,7 +637,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+                                          builder: (context) => CameraScreen(campaignId: _campaign.id),
                                         ),
                                       ).then((_) => _loadCampaignPhotos());
                                     },
@@ -675,7 +677,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                       final photo = _campaignPhotos[index];
                       return PhotoGridItem(
                         photo: photo,
-                        campaignId: widget.campaign.id,
+                        campaignId: _campaign.id,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -702,7 +704,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => CameraScreen(campaignId: widget.campaign.id),
+              builder: (context) => CameraScreen(campaignId: _campaign.id),
             ),
           ).then((_) => _loadCampaignPhotos());
         },

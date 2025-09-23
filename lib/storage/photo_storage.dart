@@ -21,8 +21,26 @@ class PhotoStorage {
     final file = await _localFile;
     final jsonList = photos.map((p) => p.toJson()).toList();
     var encoder = JsonEncoder.withIndent('  ');
-    await file.writeAsString(encoder.convert(jsonList));
-    developer.log('Photo saved successfully', name: 'CameraScreen');
+    final contents = encoder.convert(jsonList);
+
+    // Serialize writes to avoid overlapping file writes
+    _writeQueue = _writeQueue.then((_) => _atomicWrite(file, contents));
+    await _writeQueue;
+    developer.log('Photo saved successfully', name: 'PhotoStorage');
+  }
+
+  // In-process write queue to serialize file writes
+  static Future<void> _writeQueue = Future.value();
+
+  static Future<void> _atomicWrite(File file, String contents) async {
+    final tmp = File('${file.path}.tmp.${DateTime.now().millisecondsSinceEpoch}');
+    await tmp.writeAsString(contents);
+    try {
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
+    await tmp.rename(file.path);
   }
 
   static Future<List<Photo>> loadPhotos() async {
@@ -36,6 +54,8 @@ class PhotoStorage {
       return [];
     }
   }
+
+  
 
   static Future<void> updatePhoto(Photo updatedPhoto) async {
     final photos = await loadPhotos();
