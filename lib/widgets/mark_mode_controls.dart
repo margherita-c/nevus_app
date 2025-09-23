@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum MarkAction { none, add, drag, resize }
+enum MarkAction { none, add, edit }
 
 class MarkModeControls extends StatelessWidget {
   final MarkAction currentAction;
@@ -43,23 +43,12 @@ class MarkModeControls extends StatelessWidget {
           ),
           _buildControlButton(
             icon: Icons.open_with,
-            label: 'Drag',
-            isActive: currentAction == MarkAction.drag,
+            label: 'Edit',
+            isActive: currentAction == MarkAction.edit,
             isEnabled: hasSelectedSpot,
             onPressed: hasSelectedSpot
                 ? () => onActionChanged(
-                    currentAction == MarkAction.drag ? MarkAction.none : MarkAction.drag,
-                  )
-                : null,
-          ),
-          _buildControlButton(
-            icon: Icons.zoom_out_map,
-            label: 'Resize',
-            isActive: currentAction == MarkAction.resize,
-            isEnabled: hasSelectedSpot,
-            onPressed: hasSelectedSpot
-                ? () => onActionChanged(
-                    currentAction == MarkAction.resize ? MarkAction.none : MarkAction.resize,
+                    currentAction == MarkAction.edit ? MarkAction.none : MarkAction.edit,
                   )
                 : null,
           ),

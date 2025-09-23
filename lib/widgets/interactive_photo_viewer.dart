@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import '../models/photo.dart';
 import '../models/mole.dart';
-import 'spot_widget.dart';
 import 'mark_mode_controls.dart';
+import 'spot_widget.dart';
 import '../storage/user_storage.dart';
 
-class InteractivePhotoViewer extends StatelessWidget {
+class InteractivePhotoViewer extends StatefulWidget {
   final Photo photo;
   final List<Mole> moles;
   final bool isMarkMode;
@@ -36,9 +36,17 @@ class InteractivePhotoViewer extends StatelessWidget {
   });
 
   @override
+  State<InteractivePhotoViewer> createState() => _InteractivePhotoViewerState();
+}
+
+class _InteractivePhotoViewerState extends State<InteractivePhotoViewer> {
+  bool _isResizingSpot = false;
+  double _lastScale = 1.0;
+
+  @override
   Widget build(BuildContext context) {
     UserStorage.ensureUserDirectoryExists();
-    final fullPath = '${UserStorage.userDirectory}/${photo.relativePath}';
+    final fullPath = '${UserStorage.userDirectory}/${widget.photo.relativePath}';
     return Stack(
       children: [
         // Interactive viewer with image and spots
@@ -46,9 +54,10 @@ class InteractivePhotoViewer extends StatelessWidget {
           child: InteractiveViewer(
             minScale: 1.0,
             maxScale: 5.0,
-            panEnabled: !isMarkMode,
-            scaleEnabled: !isMarkMode,
-            transformationController: transformationController,
+            // Disable image pan/scale while actively resizing to avoid conflicts
+            panEnabled: !(_isResizingSpot || widget.isMarkMode && widget.markAction == MarkAction.edit),
+            scaleEnabled: !(_isResizingSpot || widget.isMarkMode && widget.markAction == MarkAction.edit),
+            transformationController: widget.transformationController,
             child: Stack(
               children: [
                 // Base image
@@ -65,21 +74,21 @@ class InteractivePhotoViewer extends StatelessWidget {
                   ),
                 ),
                 // Spots
-                ...photo.spots.asMap().entries.map((entry) {
+                ...widget.photo.spots.asMap().entries.map((entry) {
                   final index = entry.key;
                   final spot = entry.value;
                   // Build a map from the list of moles that lets me retrieve the mole by its ID
-                  final moleMap = {for (var mole in moles) mole.id: mole};
+                  final moleMap = {for (var mole in widget.moles) mole.id: mole};
                   final currentMole = moleMap[spot.moleId] ?? Mole.defaultMole();
                   
                   return SpotWidget(
                     spot: spot,
                     mole: currentMole,
-                    isSelected: selectedSpotIndex == index,
-                    isMarkMode: isMarkMode,
-                    isResizeMode: markAction == MarkAction.resize && selectedSpotIndex == index,
-                    onTap: () => onSelectSpot(index),
-                    onEdit: () => onEditSpot(index), // Add edit callback
+                    isSelected: widget.selectedSpotIndex == index,
+                    isMarkMode: widget.isMarkMode,
+                    isResizeMode: _isResizingSpot && widget.selectedSpotIndex == index,
+                    onTap: () => widget.onSelectSpot(index),
+                    onEdit: () => widget.onEditSpot(index),
                   );
                 }),
               ],
@@ -87,29 +96,65 @@ class InteractivePhotoViewer extends StatelessWidget {
           ),
         ),
         // Mark mode gesture overlay
-        if (isMarkMode)
+        if (widget.isMarkMode)
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
-              onTapDown: markAction == MarkAction.add
+              onTapDown: widget.markAction == MarkAction.add
                 ? (details) => _handleAddSpot(details)
                 : null,
-              onPanUpdate: markAction == MarkAction.drag && selectedSpotIndex != null
-                ? (details) => _handleDragSpot(details)
-                : markAction == MarkAction.resize && selectedSpotIndex != null
-                ? (details) => _handleResizeSpot(details)
-                : null,
-              // Add this line to allow zoom gestures to pass through:
-              onScaleStart: markAction == MarkAction.none ? (_) {} : null,
-              onScaleUpdate: markAction == MarkAction.none ? (_) {} : null,
+              // Use scale gestures to support two-finger pinch-to-resize and single-finger drag.
+              onScaleStart: (details) => _handleScaleStart(details),
+              onScaleUpdate: (details) => _handleScaleUpdate(details),
+              onScaleEnd: (details) => _handleScaleEnd(details),
             ),
           ),
       ],
     );
   }
 
+  void _handleScaleStart(ScaleStartDetails details) {
+    _lastScale = 1.0;
+    // We don't set _isResizingSpot yet; wait until a meaningful scale change occurs.
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    // Get current image transformation scale so we can convert screen deltas to image-space
+    final double imageScale = widget.transformationController.value.getMaxScaleOnAxis();
+
+    // Detect pinch (two-finger) by checking scale change
+    final bool pinchDetected = (details.scale - 1.0).abs() > 0.02;
+
+    if (pinchDetected && widget.markAction == MarkAction.edit && widget.selectedSpotIndex != null) {
+      if (!_isResizingSpot) setState(() => _isResizingSpot = true);
+
+      final scaleFactor = details.scale / _lastScale;
+      _lastScale = details.scale;
+
+      final currentSpot = widget.photo.spots[widget.selectedSpotIndex!];
+      final double deltaRadius = currentSpot.radius * (scaleFactor - 1.0);
+      widget.onResizeSpot(deltaRadius);
+      return;
+    }
+
+    // If not a pinch and the action is drag, use focalPointDelta as movement
+    if (!pinchDetected && widget.markAction == MarkAction.edit && widget.selectedSpotIndex != null) {
+      final Offset transformedDelta = (details.focalPointDelta) / imageScale;
+      widget.onDragSpot(transformedDelta);
+      return;
+    }
+
+    // If we were resizing but user stopped scaling, reset flag
+    if (_isResizingSpot) setState(() => _isResizingSpot = false);
+  }
+
+  void _handleScaleEnd(ScaleEndDetails details) {
+    if (_isResizingSpot) setState(() => _isResizingSpot = false);
+    _lastScale = 1.0;
+  }
+
   void _handleAddSpot(TapDownDetails details) {
-    final Matrix4 transform = transformationController.value;
+    final Matrix4 transform = widget.transformationController.value;
     final Matrix4 invertedTransform = Matrix4.inverted(transform);
     final Vector3 transformed = invertedTransform.transform3(Vector3(
       details.localPosition.dx,
@@ -117,19 +162,6 @@ class InteractivePhotoViewer extends StatelessWidget {
       0,
     ));
     final Offset transformedPosition = Offset(transformed.x, transformed.y);
-    onAddSpot(transformedPosition);
-  }
-
-  void _handleDragSpot(DragUpdateDetails details) {
-    final double scale = transformationController.value.getMaxScaleOnAxis();
-    final Offset transformedDelta = details.delta / scale;
-    onDragSpot(transformedDelta);
-  }
-
-  void _handleResizeSpot(DragUpdateDetails details) {
-    // Calculate resize delta based on vertical drag movement
-    final double scale = transformationController.value.getMaxScaleOnAxis();
-    final double resizeDelta = -details.delta.dy / scale; // Negative so dragging up increases size
-    onResizeSpot(resizeDelta);
+    widget.onAddSpot(transformedPosition);
   }
 }

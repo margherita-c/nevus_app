@@ -688,7 +688,7 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
                                 onDelete: _deletePhoto,
                               ),
                             ),
-                          );
+                          ).then((_) => _loadCampaignPhotos());
                         },
                         onCameraReturn: _loadCampaignPhotos, // Add refresh callback
                       );
