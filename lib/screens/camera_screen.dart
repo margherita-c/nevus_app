@@ -10,6 +10,7 @@ import '../models/spot.dart'; // Add import for Spot model
 import '../storage/user_storage.dart'; // Changed from photo_storage
 import '../storage/campaign_storage.dart'; // Import CampaignStorage
 import '../models/campaign.dart'; // Import Campaign model
+import '../widgets/body_part_selector.dart';
 
 class CameraScreen extends StatefulWidget {
   final String? campaignId; // Add campaign support
@@ -217,25 +218,24 @@ class CameraScreenState extends State<CameraScreen> {
   }
 
   Future<String?> _showDescriptionDialog() async {
-    final controller = TextEditingController();
+    String? selectedBodyPart;
     return await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Describe Photo'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Which body region does this photo show?'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Body Region',
-                hintText: 'e.g., Left shoulder, Upper back, Right arm',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Which body region does this photo show?'),
+              const SizedBox(height: 16),
+              BodyPartSelector(
+                onChanged: (bodyPart) {
+                  selectedBodyPart = bodyPart;
+                },
               ),
-              autofocus: true,
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -243,7 +243,7 @@ class CameraScreenState extends State<CameraScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            onPressed: () => Navigator.pop(context, selectedBodyPart),
             child: const Text('Save'),
           ),
         ],

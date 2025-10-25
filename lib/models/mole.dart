@@ -2,6 +2,7 @@ class Mole {
   final String id;
   final String name;
   final String description;
+  final String? bodyPart;
   final DateTime? createdDate;
   final DateTime? lastModified;
   final Map<String, dynamic>? metadata;
@@ -10,6 +11,7 @@ class Mole {
     required this.id,
     required this.name,
     this.description = '',
+    this.bodyPart,
     DateTime? createdDate,
     DateTime? lastModified,
     this.metadata,
@@ -31,6 +33,7 @@ class Mole {
         'id': id,
         'name': name,
         'description': description,
+        'bodyPart': bodyPart,
         'createdDate': createdDate?.toIso8601String(),
         'lastModified': lastModified?.toIso8601String(),
         'metadata': metadata,
@@ -41,6 +44,7 @@ class Mole {
         id: json['id'],
         name: json['name'],
         description: json['description'] ?? '',
+        bodyPart: json['bodyPart'],
         createdDate: json['createdDate'] != null 
             ? DateTime.parse(json['createdDate']) 
             : null,
@@ -55,6 +59,7 @@ class Mole {
     String? id,
     String? name,
     String? description,
+    String? bodyPart,
     DateTime? createdDate,
     DateTime? lastModified,
     Map<String, dynamic>? metadata,
@@ -62,6 +67,7 @@ class Mole {
         id: id ?? this.id,
         name: name ?? this.name,
         description: description ?? this.description,
+        bodyPart: bodyPart ?? this.bodyPart,
         createdDate: createdDate ?? this.createdDate,
         lastModified: lastModified ?? DateTime.now(),
         metadata: metadata ?? this.metadata,

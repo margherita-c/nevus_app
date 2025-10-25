@@ -276,12 +276,11 @@ bool _copyFileTask(Map<String, String> args) {
 
     if (confirm == true) {
       // Delete all photos from this campaign
-      final allPhotos = await UserStorage.loadPhotos();
-  // Remove photos belonging to this campaign by using campaign.photoIds
-  final remainingPhotos = allPhotos.where((photo) => !_campaign.photoIds.contains(photo.id)).toList();
-  await UserStorage.savePhotos(remainingPhotos);
+      for (final photo in _campaignPhotos) {
+        await UserStorage.deletePhoto(photo);
+      }
       
-      // Delete the campaign
+      // Delete the campaign (this will also delete the campaign directory)
       await CampaignStorage.deleteCampaign(_campaign.id);
       
       if (mounted) {
@@ -313,10 +312,8 @@ bool _copyFileTask(Map<String, String> args) {
   Future<void> _deletePhoto(int index) async {
     final photo = _campaignPhotos[index];
     
-    // Remove from all photos
-    final allPhotos = await UserStorage.loadPhotos();
-    allPhotos.removeWhere((p) => p.id == photo.id);
-    await UserStorage.savePhotos(allPhotos);
+    // Delete the photo and its file
+    await UserStorage.deletePhoto(photo);
     
     // Also remove photo id from the campaign's photoIds and save campaigns
     final campaigns = await CampaignStorage.loadCampaigns();

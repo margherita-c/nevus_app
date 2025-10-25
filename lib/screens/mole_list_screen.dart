@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/mole.dart';
 import '../storage/user_storage.dart';
 import '../widgets/app_bar_title.dart';
+import '../widgets/body_part_selector.dart';
 import 'mole_detail_screen.dart';
 
 class MoleListScreen extends StatefulWidget {
@@ -77,37 +78,46 @@ class _MoleListScreenState extends State<MoleListScreen> {
   }
 
   Future<void> _createNewMole() async {
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) {
         final nameController = TextEditingController();
         final descriptionController = TextEditingController();
+        String? selectedBodyPart;
         
         return AlertDialog(
           title: const Text('Create New Mole'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Mole Name',
-                  hintText: 'e.g., Left shoulder mole, Back center mole',
-                  border: OutlineInputBorder(),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Mole Name',
+                    hintText: 'e.g., Left shoulder mole, Back center mole',
+                    border: OutlineInputBorder(),
+                  ),
+                  autofocus: true,
                 ),
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  hintText: 'Describe the mole characteristics',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                BodyPartSelector(
+                  onChanged: (bodyPart) {
+                    selectedBodyPart = bodyPart;
+                  },
                 ),
-                maxLines: 3,
-              ),
-            ],
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    hintText: 'Describe the mole characteristics',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -120,6 +130,7 @@ class _MoleListScreenState extends State<MoleListScreen> {
                   Navigator.pop(context, {
                     'name': nameController.text.trim(),
                     'description': descriptionController.text.trim(),
+                    'bodyPart': selectedBodyPart,
                   });
                 }
               },
@@ -136,6 +147,7 @@ class _MoleListScreenState extends State<MoleListScreen> {
           id: 'mole_${DateTime.now().millisecondsSinceEpoch}',
           name: result['name']!,
           description: result['description'] ?? '',
+          bodyPart: result['bodyPart'],
         );
 
         // Load existing moles for current user

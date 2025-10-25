@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 import '../models/campaign.dart';
 import 'user_storage.dart';
@@ -40,6 +41,20 @@ class CampaignStorage {
   }
 
   static Future<void> deleteCampaign(String campaignId) async {
+    // Delete the campaign directory and all its files
+    try {
+      final campaignDir = await UserStorage.getCampaignDirectory(campaignId);
+      final directory = Directory(campaignDir);
+      if (await directory.exists()) {
+        await directory.delete(recursive: true);
+        developer.log('Deleted campaign directory: $campaignDir', name: 'CampaignStorage');
+      }
+    } catch (e) {
+      developer.log('Error deleting campaign directory for $campaignId: $e', name: 'CampaignStorage');
+      // Continue with removing from storage even if file deletion fails
+    }
+
+    // Remove from campaigns storage
     final campaigns = await loadCampaigns();
     campaigns.removeWhere((campaign) => campaign.id == campaignId);
     await saveCampaigns(campaigns);

@@ -83,6 +83,11 @@ class UserStorage {
     return fullPath; // Return as-is if not under base path
   }
 
+  /// Get full path from relative path
+  static String getFullPath(String relativePath) {
+    return '$_userDirectory/$relativePath';
+  }
+
   /// Generates a friendly folder name for a campaign based on its date
   static String getFriendlyCampaignFolderName(DateTime campaignDate) {
     return 'Campaign_${campaignDate.year}-${campaignDate.month.toString().padLeft(2, '0')}-${campaignDate.day.toString().padLeft(2, '0')}';
@@ -296,6 +301,29 @@ class UserStorage {
       await userFile.writeAsString(encoder.convert(currentUser.toJson()));
     } catch (e) {
       throw Exception('Failed to save current user: $e');
+    }
+  }
+
+  /// Delete a photo and its associated file
+  static Future<void> deletePhoto(Photo photo) async {
+    try {
+      // Delete the actual file
+      final fullPath = getFullPath(photo.relativePath);
+      final file = File(fullPath);
+      if (await file.exists()) {
+        await file.delete();
+        developer.log('Deleted photo file: $fullPath', name: 'UserStorage');
+      }
+
+      // Remove from photos storage
+      final allPhotos = await loadPhotos();
+      allPhotos.removeWhere((p) => p.id == photo.id);
+      await savePhotos(allPhotos);
+      
+      developer.log('Deleted photo from storage: ${photo.id}', name: 'UserStorage');
+    } catch (e) {
+      developer.log('Error deleting photo ${photo.id}: $e', name: 'UserStorage');
+      rethrow;
     }
   }
 }
