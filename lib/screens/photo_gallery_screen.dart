@@ -111,6 +111,7 @@ class PhotoGalleryScreenState extends State<PhotoGalleryScreen> {
                   itemBuilder: (context, index) {
                     final photo = _imageFiles[index];
                     return PhotoGridItem( // Updated to use widget
+                      key: Key('photo_${photo.id}'),
                       photo: photo,
                       onTap: () {
                         Navigator.push(

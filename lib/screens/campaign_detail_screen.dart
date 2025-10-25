@@ -63,12 +63,18 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
       orElse: () => _campaign, // Fallback to current if not found
     );
     _campaign = updatedCampaign; // Update local copy
-    final campaignPhotoIds = _campaign.photoIds;
+    final campaignPhotoIds = _campaign.photoIds.toSet(); // Use Set to remove duplicates
     final campaignPhotos = allPhotos.where((photo) => campaignPhotoIds.contains(photo.id)).toList();
+    // Ensure no duplicate photos in the final list
+    final uniquePhotos = <String, Photo>{};
+    for (final photo in campaignPhotos) {
+      uniquePhotos[photo.id] = photo;
+    }
+    final finalCampaignPhotos = uniquePhotos.values.toList();
     final allMoles = await UserStorage.loadMoles();
 
     setState(() {
-      _campaignPhotos = campaignPhotos;
+      _campaignPhotos = finalCampaignPhotos;
       _moles = allMoles;
       _isLoading = false;
     });
@@ -673,6 +679,7 @@ bool _copyFileTask(Map<String, String> args) {
                     itemBuilder: (context, index) {
                       final photo = _campaignPhotos[index];
                       return PhotoGridItem(
+                        key: Key('photo_${photo.id}'),
                         photo: photo,
                         campaignId: _campaign.id,
                         onTap: () {
